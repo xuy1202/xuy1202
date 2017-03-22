@@ -1,0 +1,991 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=swald:300,300italic,400,400italic,700,700italic|Roboto+Condens:300,300italic,400,400italic,700,700italic|Source+Code+Pro:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="PDNS,DNS," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="CYBerATtacK" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="不久前，我遇上一个人，送给我一坛酒，她说那叫“醉生梦死””。喝过之后，可以忘掉做过的任何事。我很奇怪，为什么会有这样的酒。她说人最大的烦恼，就是记性太好，如果什么都可以忘掉，以后的每一天将会是一个新的开始，那你说这有多开心。
+黄药师东邪西毒
+
+楼上的，你来写代码试试看
+我东拉西扯
+
+数据采集点的区别数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PDNS系统设计实现总结（on going）">
+<meta property="og:url" content="http://cybatk.com/2017/03/13/pdns-process-notes/index.html">
+<meta property="og:site_name" content="CYBerATtacK">
+<meta property="og:description" content="不久前，我遇上一个人，送给我一坛酒，她说那叫“醉生梦死””。喝过之后，可以忘掉做过的任何事。我很奇怪，为什么会有这样的酒。她说人最大的烦恼，就是记性太好，如果什么都可以忘掉，以后的每一天将会是一个新的开始，那你说这有多开心。
+黄药师东邪西毒
+
+楼上的，你来写代码试试看
+我东拉西扯
+
+数据采集点的区别数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据">
+<meta property="og:image" content="http://cybatk.com/2017/03/13/pdns-process-notes/pdns.frame.png">
+<meta property="og:updated_time" content="2017-03-22T13:40:34.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PDNS系统设计实现总结（on going）">
+<meta name="twitter:description" content="不久前，我遇上一个人，送给我一坛酒，她说那叫“醉生梦死””。喝过之后，可以忘掉做过的任何事。我很奇怪，为什么会有这样的酒。她说人最大的烦恼，就是记性太好，如果什么都可以忘掉，以后的每一天将会是一个新的开始，那你说这有多开心。
+黄药师东邪西毒
+
+楼上的，你来写代码试试看
+我东拉西扯
+
+数据采集点的区别数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据">
+<meta name="twitter:image" content="http://cybatk.com/2017/03/13/pdns-process-notes/pdns.frame.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 'undefined',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://cybatk.com/2017/03/13/pdns-process-notes/"/>
+
+
+
+
+
+  <title> PDNS系统设计实现总结（on going） | CYBerATtacK </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-93514438-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">CYBerATtacK</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">cyber security related things</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocapitalize="off" autocomplete="off" autocorrect="off"
+             placeholder="Searching..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/03/13/pdns-process-notes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                PDNS系统设计实现总结（on going）
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-03-13T21:45:40+08:00">
+                2017-03-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <blockquote><p>不久前，我遇上一个人，送给我一坛酒，她说那叫“醉生梦死””。喝过之后，可以忘掉做过的任何事。<br>我很奇怪，为什么会有这样的酒。<br>她说人最大的烦恼，就是记性太好，如果什么都可以忘掉，以后的每一天将会是一个新的开始，那你说这有多开心。</p>
+<footer><strong>黄药师</strong><cite>东邪西毒</cite></footer></blockquote>
+<hr>
+<blockquote><p>楼上的，你来写代码试试看</p>
+<footer><strong>我</strong><cite>东拉西扯</cite></footer></blockquote>
+<hr>
+<h1 id="数据采集点的区别"><a href="#数据采集点的区别" class="headerlink" title="数据采集点的区别"></a>数据采集点的区别</h1><p>数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据，那些能做，哪些不能做。不同的采集点，采集到的数据不一样，量有大小的区别，覆盖范围有区别，可以提取出来的特征不一样，因此对于既定的分析目标，可能一个采集点的数据可以轻而易举的完成，而另外一个采集点可能做起来会非常费力，甚或天然的就无法做到。</p>
+<p><img src="/2017/03/13/pdns-process-notes/pdns.frame.png" alt=""></p>
+<blockquote>
+<p>由于懒，我直接抠我在FloCon2017上的talk的PPT的一页来说明。</p>
+</blockquote>
+<p>上图是一个最简单的DNS请求的全路径。一个用户在运营商提供的一个子网内，发起的DNS请求通过运营商的边界路由，到一个OpenResolver/RecursiveServer，OpenResolver/RecursiveServer 负责完整的递归查询，将最终的IP返回给用户</p>
+<h2 id="open-resolver-之上"><a href="#open-resolver-之上" class="headerlink" title="open resolver 之上"></a>open resolver 之上</h2><p>图中的点【1】处。</p>
+<p>这里的数据是DNS服务商的递归查询数据。理论上，只有当 </p>
+<ul>
+<li>一个查询的域名之前没有查询过 </li>
+<li>一个已经缓存的域名结果TTL已经过期</li>
+</ul>
+<p>两种情况下，才会有递归数据产生。</p>
+<p>域名的请求永远是大头长尾的数据形态，大部分的查询都会落在缓存中，有效的TTL时间范围内，一般来说，这里的数据量比点【2】处的客户端查询要小2个数量级。</p>
+<p>加之一般的DNS服务商都会有基本的数据过滤，不合法的请求，错误的数据包，基本都可以很轻松的清洗掉，所以这里的数据也会比较干净。</p>
+<p>数据量小，而且干净，拥有所有的递归过程的数据，因此这里的数据最适合用于构建一个PDNS系统，用以记录历史上domain-ip的映射关系及其变化。</p>
+<h2 id="open-resolver-之下"><a href="#open-resolver-之下" class="headerlink" title="open resolver 之下"></a>open resolver 之下</h2><p>图中的点【2】处。</p>
+<p>这里的数据包括所有的点【1】的数据，不过数据量至少至少上升了2个数量级。</p>
+<p>此外，在这里我们看得到客户端的数据，我们可以知道一个client ip在什么时间请求了什么域名。一个client ip频繁的请求比如cpsc.gov ANY，这极有可能是反射放大。一个client ip请求同一个SLD的不同的子域名，这又分至少两种情况：子域名如果构成比较规律，比如一个单词，那可能是子域名暴力破解；子域名如果构成是杂乱的随机字符串，那可能是RSD攻击。</p>
+<p>而且，我们在此还可以知道query数据包中的src port（sport），transaction id（tid）数据。真实的DNS请求都是伴随着随机的sport/tid，因此，在一段时间内，针对同一个domain的所有query，或者一个client发出去的针对任意domain的query，其sport/tid的统计肯定是离散的，当统计显示针对某domain／某client的sport/tid是聚集的时候，我们就有相当大的把握断定这部分数据是伪造的query。</p>
+<h2 id="路由器边界"><a href="#路由器边界" class="headerlink" title="路由器边界"></a>路由器边界</h2><p>图中的点【3】处。</p>
+<p>乍看起来，点【3】的数据等于把所有点【2】的数据都汇聚到一起。现实的问题在于：1）点【2】的数据都属于各大DNS厂商，这部分数据不可能完全汇总分享 2）正常的用户往往都会使用一个DNS服务器，但是和DNS相关的攻击流量都会和很多的open resolver相关 3）有很多DNS流量和open resolver无关，在点【2】也看不到，因此点【3】是非常必要的。</p>
+<p>举例来说，RSD攻击一般来说会通过多个open resolver来打，但是也可能伪造流量直接请求到authoritative server，如果是后者，那在点【2】的位置就完全看不到，但是在点【3】可以看到。</p>
+<p>再者，点【3】是client-focused，比如反射放大攻击，一次攻击可能动用上万个open resolver，在点【2】的单个open resolver处很可能被忽略掉，但是点【3】看到的是一个client ip接受来自上万个open resolver的响应，想故意漏掉都比较难吧。</p>
+<p>甚或，这里我们可以看到query without response 有去无回数据, response without query无中生有数据，看到一个DNS服务器将任意domain的query响应为一个固定的IP等等，具体有什么用，think～</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>上述三个数据采集点是做DNS数据分析一般的，常规的，最有效的数据采集位置，此外前后两端的数据采集点也要注意。</p>
+<h3 id="authority-server-边界"><a href="#authority-server-边界" class="headerlink" title="authority server 边界"></a>authority server 边界</h3><p>麻烦各个NS管理员，如果闲了，看看自己的DNS服务器处理的请求都是什么，有没有开泛解析，有没有配置错误将一个权威服务器开启了递归查询功能。我们的数据表明，常被利用的DNS反射节点中，至少2%是开了递归查询功能的权威服务器，无意间就给反射放大攻击添柴助力。</p>
+<h3 id="客户端网卡"><a href="#客户端网卡" class="headerlink" title="客户端网卡"></a>客户端网卡</h3><p>说一个场景，用户电脑，没人操作的时候，恶意软件可没闲着，各种可疑的黑网站，DGA这时候都会突兀的出现。</p>
+<h3 id="不可说"><a href="#不可说" class="headerlink" title="不可说"></a>不可说</h3><p>实际上，任何可以获取DNS解析记录的地方，其数据可能都有独到可用之处。尤其考虑到数据获取的场景context，简单来说，场景越黑，数据越黑。你有黑场景的数据可分享么？如果有，请联系我～</p>
+<hr>
+<h1 id="接入点处理"><a href="#接入点处理" class="headerlink" title="接入点处理"></a>接入点处理</h1><p>当前我们的数据在白天忙时平均有700w records/s，record指得是query-response pairing之后提取出来的数据记录。多个数据节点数据并不是平均分配的，最大的点超过150w/s，接入的千兆网卡是打满的状态。针对这么大的数据量，系统架构，或者说数据流设计，都要依赖一个高效稳固的接入和足够灵活的数据分发方式，所以接入点的处理单独拎出来说明一下。</p>
+<ul>
+<li>sensor：负责原始DNS流量的抓取，解析，配对过程，形成最终的record，然后以hash(client ip/24)为key将数据publish出来</li>
+<li>hasher：接受从sensor的record数据，然后以hash(SLD)的形式将数据publish出来</li>
+</ul>
+<div class="note default"><p>考虑到用户隐私，client ip可以做混淆</p>
+</div>
+<h2 id="应对超大量数据"><a href="#应对超大量数据" class="headerlink" title="应对超大量数据"></a>应对超大量数据</h2><ul>
+<li>数据水平切分，client／domain两大维度，后续详细分析</li>
+<li>传输使用Zmq，pub/sub模式，单ctx足够</li>
+<li>数据格式为protobuf。另：注意所有字段都为optional，不明白原因的去google</li>
+<li>批量合并压缩数据，zlib的Z_BEST_SPEED模式下压缩率为30%左右</li>
+<li>无锁队列，zmq的push/pull (inproc://addr)。注意，一定是消费者同质的时候才可以。消费者不同质，老老实实上lock-queue，否则一个慢消费者会拖死整个队列</li>
+<li>log要异步多线程flush</li>
+<li>打点统计尽可能避免锁，可以使用__sync_XXX系列函数，也可以考虑thread::local单独打点，合并dump</li>
+</ul>
+<h2 id="数据分割"><a href="#数据分割" class="headerlink" title="数据分割"></a>数据分割</h2><p><strong><u>这一点尤为关键</u></strong>，接入的数据量巨大，不可能根据不同的需求重复传输多次，只有水平切分做好，后续的处理过程才能非常方便的扩展。</p>
+<p>我的架构里，sensor和hasher作为公共的数据获取接口，其中sensor是以hash(client ip)为key的获取接口，hasher是以hash(SLD)为key的获取接口。</p>
+<p>根据需求，如果后续的分析过程是以domain为核心的，那就从hasher来获取，所有*.test.domain都会被分发到一个同一个key下。如果想看某个client ip的情况，那就从sensor直接获取，那同一个client ip的访问行为会集中发布在同一个key上。</p>
+<p>提取SLD的过程，不要简单的从后向前数点，com.cn等多级的TLD和com等单级的TLD判断起来会比较麻烦费力。先将所有TLD数据load成为一个trie tree，来的每一条数据，将FQDN从后向前遍历到最深，然后接着遍历到结尾或者下一个.的位置即可，考虑到SLD的长度基本都会在10个字符以内，这样的算法可以认为是O(1)的。</p>
+<h2 id="disposable-domain"><a href="#disposable-domain" class="headerlink" title="disposable domain"></a>disposable domain</h2><h2 id="去重"><a href="#去重" class="headerlink" title="去重"></a>去重</h2><h2 id="“阶梯”采样"><a href="#“阶梯”采样" class="headerlink" title="“阶梯”采样"></a>“阶梯”采样</h2><hr>
+<h1 id="基本架构／数据流"><a href="#基本架构／数据流" class="headerlink" title="基本架构／数据流"></a>基本架构／数据流</h1><h2 id="PDNS-system"><a href="#PDNS-system" class="headerlink" title="PDNS system"></a>PDNS system</h2><h2 id="cross-access-system"><a href="#cross-access-system" class="headerlink" title="cross-access system"></a>cross-access system</h2><h2 id="real-time-data-query-system"><a href="#real-time-data-query-system" class="headerlink" title="real-time data query system"></a>real-time data query system</h2><h2 id="real-time-analysis-system"><a href="#real-time-analysis-system" class="headerlink" title="real-time analysis system"></a>real-time analysis system</h2><hr>
+<h1 id="实时分析处理"><a href="#实时分析处理" class="headerlink" title="实时分析处理"></a>实时分析处理</h1><h2 id="归一化及数据预处理"><a href="#归一化及数据预处理" class="headerlink" title="归一化及数据预处理"></a>归一化及数据预处理</h2><h2 id="域名请求量统计"><a href="#域名请求量统计" class="headerlink" title="域名请求量统计"></a>域名请求量统计</h2><h2 id="spike-判定"><a href="#spike-判定" class="headerlink" title="spike 判定"></a>spike 判定</h2><h2 id="domain-profile"><a href="#domain-profile" class="headerlink" title="domain profile"></a>domain profile</h2><h2 id="client-profile"><a href="#client-profile" class="headerlink" title="client profile"></a>client profile</h2><h2 id="DNS-server-profile"><a href="#DNS-server-profile" class="headerlink" title="DNS server profile"></a>DNS server profile</h2><h2 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h2><h2 id="随机程度的度量：熵？"><a href="#随机程度的度量：熵？" class="headerlink" title="随机程度的度量：熵？"></a>随机程度的度量：熵？</h2><hr>
+<h1 id="其他-1"><a href="#其他-1" class="headerlink" title="其他"></a>其他</h1><h2 id="日志系统"><a href="#日志系统" class="headerlink" title="日志系统"></a>日志系统</h2><h2 id="打点统计"><a href="#打点统计" class="headerlink" title="打点统计"></a>打点统计</h2><h2 id="分发缓存"><a href="#分发缓存" class="headerlink" title="分发缓存"></a>分发缓存</h2>
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/PDNS/" rel="tag"># PDNS</a>
+          
+            <a href="/tags/DNS/" rel="tag"># DNS</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/03/11/hexo-github-blog/" rel="next" title="using [hexo + next + github page] to build a blog">
+                <i class="fa fa-chevron-left"></i> using [hexo + next + github page] to build a blog
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- Go to www.addthis.com/dashboard to customize your tools -->
+<div class="addthis_inline_share_toolbox">
+  <script type = "text/javascript" src = "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-58c42267b9d94914" async = "async" ></script>
+</div>
+
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/touxiang.jpg"
+               alt="YANG XU" />
+          <p class="site-author-name" itemprop="name">YANG XU</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-name">posts</span>
+              </a>
+            </div>
+          
+
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">24</span>
+                <span class="site-state-item-name">tags</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://www.linkedin.com/in/xuamao/" target="_blank" title="Linkedin">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  Linkedin
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/xuy1202" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://twitter.com/xuy1202" target="_blank" title="Twitter">
+                  
+                    <i class="fa fa-fw fa-twitter"></i>
+                  
+                  Twitter
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/xuy1202" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#数据采集点的区别"><span class="nav-number">1.</span> <span class="nav-text">数据采集点的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#open-resolver-之上"><span class="nav-number">1.1.</span> <span class="nav-text">open resolver 之上</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#open-resolver-之下"><span class="nav-number">1.2.</span> <span class="nav-text">open resolver 之下</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#路由器边界"><span class="nav-number">1.3.</span> <span class="nav-text">路由器边界</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#其他"><span class="nav-number">1.4.</span> <span class="nav-text">其他</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#authority-server-边界"><span class="nav-number">1.4.1.</span> <span class="nav-text">authority server 边界</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#客户端网卡"><span class="nav-number">1.4.2.</span> <span class="nav-text">客户端网卡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不可说"><span class="nav-number">1.4.3.</span> <span class="nav-text">不可说</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#接入点处理"><span class="nav-number">2.</span> <span class="nav-text">接入点处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#应对超大量数据"><span class="nav-number">2.1.</span> <span class="nav-text">应对超大量数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据分割"><span class="nav-number">2.2.</span> <span class="nav-text">数据分割</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#disposable-domain"><span class="nav-number">2.3.</span> <span class="nav-text">disposable domain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#去重"><span class="nav-number">2.4.</span> <span class="nav-text">去重</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#“阶梯”采样"><span class="nav-number">2.5.</span> <span class="nav-text">“阶梯”采样</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#基本架构／数据流"><span class="nav-number">3.</span> <span class="nav-text">基本架构／数据流</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#PDNS-system"><span class="nav-number">3.1.</span> <span class="nav-text">PDNS system</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cross-access-system"><span class="nav-number">3.2.</span> <span class="nav-text">cross-access system</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#real-time-data-query-system"><span class="nav-number">3.3.</span> <span class="nav-text">real-time data query system</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#real-time-analysis-system"><span class="nav-number">3.4.</span> <span class="nav-text">real-time analysis system</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实时分析处理"><span class="nav-number">4.</span> <span class="nav-text">实时分析处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#归一化及数据预处理"><span class="nav-number">4.1.</span> <span class="nav-text">归一化及数据预处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#域名请求量统计"><span class="nav-number">4.2.</span> <span class="nav-text">域名请求量统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spike-判定"><span class="nav-number">4.3.</span> <span class="nav-text">spike 判定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#domain-profile"><span class="nav-number">4.4.</span> <span class="nav-text">domain profile</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#client-profile"><span class="nav-number">4.5.</span> <span class="nav-text">client profile</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DNS-server-profile"><span class="nav-number">4.6.</span> <span class="nav-text">DNS server profile</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#特征选择"><span class="nav-number">4.7.</span> <span class="nav-text">特征选择</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#随机程度的度量：熵？"><span class="nav-number">4.8.</span> <span class="nav-text">随机程度的度量：熵？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#其他-1"><span class="nav-number">5.</span> <span class="nav-text">其他</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#日志系统"><span class="nav-number">5.1.</span> <span class="nav-text">日志系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#打点统计"><span class="nav-number">5.2.</span> <span class="nav-text">打点统计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分发缓存"><span class="nav-number">5.3.</span> <span class="nav-text">分发缓存</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy;  2015 - God knows - 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">YANG XU</span>
+</div>
+
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="https://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length == 0) {
+      search_path = "search.xml";
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.popup').toggle();
+    }
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+      $.ajax({
+        url: path,
+        dataType: "xml",
+        async: true,
+        success: function( xmlResponse ) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = $( "entry", xmlResponse ).map(function() {
+            return {
+              title: $( "title", this ).text(),
+              content: $("content",this).text(),
+              url: $( "url" , this).text()
+            };
+          }).get();
+          var $input = document.getElementById(search_id);
+          var $resultContent = document.getElementById(content_id);
+          $input.addEventListener('input', function(){
+            var matchcounts = 0;
+            var str='<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length > 1) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var content_index = [];
+                var data_title = data.title.trim().toLowerCase();
+                var data_content = data.content.trim().replace(/<[^>]+>/g,"").toLowerCase();
+                var data_url = decodeURIComponent(data.url);
+                var index_title = -1;
+                var index_content = -1;
+                var first_occur = -1;
+                // only match artiles with not empty titles and contents
+                if(data_title != '') {
+                  keywords.forEach(function(keyword, i) {
+                    index_title = data_title.indexOf(keyword);
+                    index_content = data_content.indexOf(keyword);
+                    if( index_title >= 0 || index_content >= 0 ){
+                      isMatch = true;
+                      if (i == 0) {
+                        first_occur = index_content;
+                      }
+                    }
+
+                  });
+                }
+                // show search results
+                if (isMatch) {
+                  matchcounts += 1;
+                  str += "<li><a href='"+ data_url +"' class='search-result-title'>"+ data_title +"</a>";
+                  var content = data.content.trim().replace(/<[^>]+>/g,"");
+                  if (first_occur >= 0) {
+                    // cut out 100 characters
+                    var start = first_occur - 20;
+                    var end = first_occur + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if(start == 0){
+                      end = 50;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    var match_content = content.substring(start, end);
+                    // highlight all keywords
+                    keywords.forEach(function(keyword){
+                      var regS = new RegExp(keyword, "gi");
+                      match_content = match_content.replace(regS, "<b class=\"search-keyword\">"+keyword+"</b>");
+                    });
+
+                    str += "<p class=\"search-result\">" + match_content +"...</p>"
+                  }
+                  str += "</li>";
+                }
+              })};
+            str += "</ul>";
+            if (matchcounts == 0) { str = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>' }
+            if (keywords == "") { str = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>' }
+            $resultContent.innerHTML = str;
+          });
+          proceedsearch();
+        }
+      });}
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched == false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(function(e){
+      $('.popup').hide();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    });
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

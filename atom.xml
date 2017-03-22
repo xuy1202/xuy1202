@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>CYBerATtacK</title>
+  <subtitle>cyber security related things</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://cybatk.com/"/>
+  <updated>2017-03-22T13:40:34.000Z</updated>
+  <id>http://cybatk.com/</id>
+  
+  <author>
+    <name>YANG XU</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>PDNS系统设计实现总结（on going）</title>
+    <link href="http://cybatk.com/2017/03/13/pdns-process-notes/"/>
+    <id>http://cybatk.com/2017/03/13/pdns-process-notes/</id>
+    <published>2017-03-13T13:45:40.000Z</published>
+    <updated>2017-03-22T13:40:34.000Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>不久前，我遇上一个人，送给我一坛酒，她说那叫“醉生梦死””。喝过之后，可以忘掉做过的任何事。<br>我很奇怪，为什么会有这样的酒。<br>她说人最大的烦恼，就是记性太好，如果什么都可以忘掉，以后的每一天将会是一个新的开始，那你说这有多开心。</p>
+<footer><strong>黄药师</strong><cite>东邪西毒</cite></footer></blockquote>
+<hr>
+<blockquote><p>楼上的，你来写代码试试看</p>
+<footer><strong>我</strong><cite>东拉西扯</cite></footer></blockquote>
+<hr>
+<h1 id="数据采集点的区别"><a href="#数据采集点的区别" class="headerlink" title="数据采集点的区别"></a>数据采集点的区别</h1><p>数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据，那些能做，哪些不能做。不同的采集点，采集到的数据不一样，量有大小的区别，覆盖范围有区别，可以提取出来的特征不一样，因此对于既定的分析目标，可能一个采集点的数据可以轻而易举的完成，而另外一个采集点可能做起来会非常费力，甚或天然的就无法做到。</p>
+<p><img src="/2017/03/13/pdns-process-notes/pdns.frame.png" alt=""></p>
+<blockquote>
+<p>由于懒，我直接抠我在FloCon2017上的talk的PPT的一页来说明。</p>
+</blockquote>
+<p>上图是一个最简单的DNS请求的全路径。一个用户在运营商提供的一个子网内，发起的DNS请求通过运营商的边界路由，到一个OpenResolver/RecursiveServer，OpenResolver/RecursiveServer 负责完整的递归查询，将最终的IP返回给用户</p>
+<h2 id="open-resolver-之上"><a href="#open-resolver-之上" class="headerlink" title="open resolver 之上"></a>open resolver 之上</h2><p>图中的点【1】处。</p>
+<p>这里的数据是DNS服务商的递归查询数据。理论上，只有当 </p>
+<ul>
+<li>一个查询的域名之前没有查询过 </li>
+<li>一个已经缓存的域名结果TTL已经过期</li>
+</ul>
+<p>两种情况下，才会有递归数据产生。</p>
+<p>域名的请求永远是大头长尾的数据形态，大部分的查询都会落在缓存中，有效的TTL时间范围内，一般来说，这里的数据量比点【2】处的客户端查询要小2个数量级。</p>
+<p>加之一般的DNS服务商都会有基本的数据过滤，不合法的请求，错误的数据包，基本都可以很轻松的清洗掉，所以这里的数据也会比较干净。</p>
+<p>数据量小，而且干净，拥有所有的递归过程的数据，因此这里的数据最适合用于构建一个PDNS系统，用以记录历史上domain-ip的映射关系及其变化。</p>
+<h2 id="open-resolver-之下"><a href="#open-resolver-之下" class="headerlink" title="open resolver 之下"></a>open resolver 之下</h2><p>图中的点【2】处。</p>
+<p>这里的数据包括所有的点【1】的数据，不过数据量至少至少上升了2个数量级。</p>
+<p>此外，在这里我们看得到客户端的数据，我们可以知道一个client ip在什么时间请求了什么域名。一个client ip频繁的请求比如cpsc.gov ANY，这极有可能是反射放大。一个client ip请求同一个SLD的不同的子域名，这又分至少两种情况：子域名如果构成比较规律，比如一个单词，那可能是子域名暴力破解；子域名如果构成是杂乱的随机字符串，那可能是RSD攻击。</p>
+<p>而且，我们在此还可以知道query数据包中的src port（sport），transaction id（tid）数据。真实的DNS请求都是伴随着随机的sport/tid，因此，在一段时间内，针对同一个domain的所有query，或者一个client发出去的针对任意domain的query，其sport/tid的统计肯定是离散的，当统计显示针对某domain／某client的sport/tid是聚集的时候，我们就有相当大的把握断定这部分数据是伪造的query。</p>
+<h2 id="路由器边界"><a href="#路由器边界" class="headerlink" title="路由器边界"></a>路由器边界</h2><p>图中的点【3】处。</p>
+<p>乍看起来，点【3】的数据等于把所有点【2】的数据都汇聚到一起。现实的问题在于：1）点【2】的数据都属于各大DNS厂商，这部分数据不可能完全汇总分享 2）正常的用户往往都会使用一个DNS服务器，但是和DNS相关的攻击流量都会和很多的open resolver相关 3）有很多DNS流量和open resolver无关，在点【2】也看不到，因此点【3】是非常必要的。</p>
+<p>举例来说，RSD攻击一般来说会通过多个open resolver来打，但是也可能伪造流量直接请求到authoritative server，如果是后者，那在点【2】的位置就完全看不到，但是在点【3】可以看到。</p>
+<p>再者，点【3】是client-focused，比如反射放大攻击，一次攻击可能动用上万个open resolver，在点【2】的单个open resolver处很可能被忽略掉，但是点【3】看到的是一个client ip接受来自上万个open resolver的响应，想故意漏掉都比较难吧。</p>
+<p>甚或，这里我们可以看到query without response 有去无回数据, response without query无中生有数据，看到一个DNS服务器将任意domain的query响应为一个固定的IP等等，具体有什么用，think～</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>上述三个数据采集点是做DNS数据分析一般的，常规的，最有效的数据采集位置，此外前后两端的数据采集点也要注意。</p>
+<h3 id="authority-server-边界"><a href="#authority-server-边界" class="headerlink" title="authority server 边界"></a>authority server 边界</h3><p>麻烦各个NS管理员，如果闲了，看看自己的DNS服务器处理的请求都是什么，有没有开泛解析，有没有配置错误将一个权威服务器开启了递归查询功能。我们的数据表明，常被利用的DNS反射节点中，至少2%是开了递归查询功能的权威服务器，无意间就给反射放大攻击添柴助力。</p>
+<h3 id="客户端网卡"><a href="#客户端网卡" class="headerlink" title="客户端网卡"></a>客户端网卡</h3><p>说一个场景，用户电脑，没人操作的时候，恶意软件可没闲着，各种可疑的黑网站，DGA这时候都会突兀的出现。</p>
+<h3 id="不可说"><a href="#不可说" class="headerlink" title="不可说"></a>不可说</h3><p>实际上，任何可以获取DNS解析记录的地方，其数据可能都有独到可用之处。尤其考虑到数据获取的场景context，简单来说，场景越黑，数据越黑。你有黑场景的数据可分享么？如果有，请联系我～</p>
+<hr>
+<h1 id="接入点处理"><a href="#接入点处理" class="headerlink" title="接入点处理"></a>接入点处理</h1><p>当前我们的数据在白天忙时平均有700w records/s，record指得是query-response pairing之后提取出来的数据记录。多个数据节点数据并不是平均分配的，最大的点超过150w/s，接入的千兆网卡是打满的状态。针对这么大的数据量，系统架构，或者说数据流设计，都要依赖一个高效稳固的接入和足够灵活的数据分发方式，所以接入点的处理单独拎出来说明一下。</p>
+<ul>
+<li>sensor：负责原始DNS流量的抓取，解析，配对过程，形成最终的record，然后以hash(client ip/24)为key将数据publish出来</li>
+<li>hasher：接受从sensor的record数据，然后以hash(SLD)的形式将数据publish出来</li>
+</ul>
+<div class="note default"><p>考虑到用户隐私，client ip可以做混淆</p>
+</div>
+<h2 id="应对超大量数据"><a href="#应对超大量数据" class="headerlink" title="应对超大量数据"></a>应对超大量数据</h2><ul>
+<li>数据水平切分，client／domain两大维度，后续详细分析</li>
+<li>传输使用Zmq，pub/sub模式，单ctx足够</li>
+<li>数据格式为protobuf。另：注意所有字段都为optional，不明白原因的去google</li>
+<li>批量合并压缩数据，zlib的Z_BEST_SPEED模式下压缩率为30%左右</li>
+<li>无锁队列，zmq的push/pull (inproc://addr)。注意，一定是消费者同质的时候才可以。消费者不同质，老老实实上lock-queue，否则一个慢消费者会拖死整个队列</li>
+<li>log要异步多线程flush</li>
+<li>打点统计尽可能避免锁，可以使用__sync_XXX系列函数，也可以考虑thread::local单独打点，合并dump</li>
+</ul>
+<h2 id="数据分割"><a href="#数据分割" class="headerlink" title="数据分割"></a>数据分割</h2><p><strong><u>这一点尤为关键</u></strong>，接入的数据量巨大，不可能根据不同的需求重复传输多次，只有水平切分做好，后续的处理过程才能非常方便的扩展。</p>
+<p>我的架构里，sensor和hasher作为公共的数据获取接口，其中sensor是以hash(client ip)为key的获取接口，hasher是以hash(SLD)为key的获取接口。</p>
+<p>根据需求，如果后续的分析过程是以domain为核心的，那就从hasher来获取，所有*.test.domain都会被分发到一个同一个key下。如果想看某个client ip的情况，那就从sensor直接获取，那同一个client ip的访问行为会集中发布在同一个key上。</p>
+<p>提取SLD的过程，不要简单的从后向前数点，com.cn等多级的TLD和com等单级的TLD判断起来会比较麻烦费力。先将所有TLD数据load成为一个trie tree，来的每一条数据，将FQDN从后向前遍历到最深，然后接着遍历到结尾或者下一个.的位置即可，考虑到SLD的长度基本都会在10个字符以内，这样的算法可以认为是O(1)的。</p>
+<h2 id="disposable-domain"><a href="#disposable-domain" class="headerlink" title="disposable domain"></a>disposable domain</h2><h2 id="去重"><a href="#去重" class="headerlink" title="去重"></a>去重</h2><h2 id="“阶梯”采样"><a href="#“阶梯”采样" class="headerlink" title="“阶梯”采样"></a>“阶梯”采样</h2><hr>
+<h1 id="基本架构／数据流"><a href="#基本架构／数据流" class="headerlink" title="基本架构／数据流"></a>基本架构／数据流</h1><h2 id="PDNS-system"><a href="#PDNS-system" class="headerlink" title="PDNS system"></a>PDNS system</h2><h2 id="cross-access-system"><a href="#cross-access-system" class="headerlink" title="cross-access system"></a>cross-access system</h2><h2 id="real-time-data-query-system"><a href="#real-time-data-query-system" class="headerlink" title="real-time data query system"></a>real-time data query system</h2><h2 id="real-time-analysis-system"><a href="#real-time-analysis-system" class="headerlink" title="real-time analysis system"></a>real-time analysis system</h2><hr>
+<h1 id="实时分析处理"><a href="#实时分析处理" class="headerlink" title="实时分析处理"></a>实时分析处理</h1><h2 id="归一化及数据预处理"><a href="#归一化及数据预处理" class="headerlink" title="归一化及数据预处理"></a>归一化及数据预处理</h2><h2 id="域名请求量统计"><a href="#域名请求量统计" class="headerlink" title="域名请求量统计"></a>域名请求量统计</h2><h2 id="spike-判定"><a href="#spike-判定" class="headerlink" title="spike 判定"></a>spike 判定</h2><h2 id="domain-profile"><a href="#domain-profile" class="headerlink" title="domain profile"></a>domain profile</h2><h2 id="client-profile"><a href="#client-profile" class="headerlink" title="client profile"></a>client profile</h2><h2 id="DNS-server-profile"><a href="#DNS-server-profile" class="headerlink" title="DNS server profile"></a>DNS server profile</h2><h2 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h2><h2 id="随机程度的度量：熵？"><a href="#随机程度的度量：熵？" class="headerlink" title="随机程度的度量：熵？"></a>随机程度的度量：熵？</h2><hr>
+<h1 id="其他-1"><a href="#其他-1" class="headerlink" title="其他"></a>其他</h1><h2 id="日志系统"><a href="#日志系统" class="headerlink" title="日志系统"></a>日志系统</h2><h2 id="打点统计"><a href="#打点统计" class="headerlink" title="打点统计"></a>打点统计</h2><h2 id="分发缓存"><a href="#分发缓存" class="headerlink" title="分发缓存"></a>分发缓存</h2>]]></content>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;&lt;p&gt;不久前，我遇上一个人，送给我一坛酒，她说那叫“醉生梦死””。喝过之后，可以忘掉做过的任何事。&lt;br&gt;我很奇怪，为什么会有这样的酒。&lt;br&gt;她说人最大的烦恼，就是记性太好，如果什么都可以忘掉，以后的每一天将会是一个新的开始，那你说这有多开心。&lt;/p&gt;
+
+    
+    </summary>
+    
+    
+      <category term="PDNS" scheme="http://cybatk.com/tags/PDNS/"/>
+    
+      <category term="DNS" scheme="http://cybatk.com/tags/DNS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>using [hexo + next + github page] to build a blog</title>
+    <link href="http://cybatk.com/2017/03/11/hexo-github-blog/"/>
+    <id>http://cybatk.com/2017/03/11/hexo-github-blog/</id>
+    <published>2017-03-11T14:48:50.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="hexo的环境配置"><a href="#hexo的环境配置" class="headerlink" title="hexo的环境配置"></a>hexo的环境配置</h3><p>直接贴脚本</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">mkdir your.dir</div><div class="line"><span class="built_in">cd</span> your.dir</div><div class="line"></div><div class="line">npm install hexo-cli --save</div><div class="line">npm install hexo --save</div><div class="line"></div><div class="line">hexo init</div><div class="line"></div><div class="line">npm install hexo-generator-index --save</div><div class="line">npm install hexo-generator-archive --save</div><div class="line">npm install hexo-generator-category --save</div><div class="line">npm install hexo-generator-tag --save</div><div class="line">npm install hexo-server --save</div><div class="line">npm install hexo-deployer-git --save</div><div class="line">npm install hexo-deployer-heroku --save</div><div class="line">npm install hexo-deployer-rsync --save</div><div class="line">npm install hexo-deployer-openshift --save</div><div class="line">npm install hexo-renderer-marked@0.2 --save</div><div class="line">npm install hexo-renderer-stylus@0.2 --save</div><div class="line">npm install hexo-generator-feed@1 --save</div><div class="line">npm install hexo-generator-sitemap@1 --save</div><div class="line">npm install hexo-util --save</div><div class="line">npm install hexo-generator-searchdb --save</div><div class="line"></div><div class="line">git <span class="built_in">clone</span> https://github.com/iissnan/hexo-theme-next themes/next</div><div class="line"></div><div class="line"><span class="built_in">cd</span> themes/next</div><div class="line">npm install</div><div class="line">npm install -g bower</div><div class="line">npm install -g grunt-cli</div><div class="line"><span class="built_in">cd</span> -</div></pre></td></tr></table></figure>
+<p>此时，如果所有安装都没有意外，执行 hexo server 就可以启动http服务器在本机4000端口，有一个默认的hello world的主页面</p>
+<h3 id="省略github的配置以及github-page的部署过程"><a href="#省略github的配置以及github-page的部署过程" class="headerlink" title="省略github的配置以及github page的部署过程"></a>省略github的配置以及github page的部署过程</h3><h3 id="省略自己域名-到-github-page的映射过程"><a href="#省略自己域名-到-github-page的映射过程" class="headerlink" title="省略自己域名 到 github page的映射过程"></a>省略自己域名 到 github page的映射过程</h3><h3 id="hexo-配置"><a href="#hexo-配置" class="headerlink" title="hexo 配置"></a>hexo 配置</h3><p>两个配置文件：<br>1, yourdir/_config.yml: 这个是hexo的配置文件，包括使用哪个主题，这里我们使用next，就需要在该配置中设置。同时，还需要在这里配置要同步到的github page的地址。<br>2, yourdir/themes/next/_config.yml: 这个是主题相关的配置，包括页面布局，第三方评论统计接口等等，看看就明白了<br>3, 我的配置参见：<a href="https://github.com/xuy1202/blog" target="_blank" rel="external">https://github.com/xuy1202/blog</a></p>
+<p>注意：<br>    hexo deploy 的时候，是从source文件夹生成为public，然后上传到github。而自己的域名绑定到xxx.github.io的时候，xxx.github.io下面第一级必须有一个CNAME文件对应为自己的域名。所以，必须将对应的CNAME文件放到source一份，这样才能保证每次deploy之后，从自己域名转到github的访问是正确的。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;hexo的环境配置&quot;&gt;&lt;a href=&quot;#hexo的环境配置&quot; class=&quot;headerlink&quot; title=&quot;hexo的环境配置&quot;&gt;&lt;/a&gt;hexo的环境配置&lt;/h3&gt;&lt;p&gt;直接贴脚本&lt;/p&gt;
+&lt;figure class=&quot;highlight sh&quot;&gt;&lt;ta
+    
+    </summary>
+    
+    
+      <category term="hexo" scheme="http://cybatk.com/tags/hexo/"/>
+    
+      <category term="next" scheme="http://cybatk.com/tags/next/"/>
+    
+      <category term="github" scheme="http://cybatk.com/tags/github/"/>
+    
+      <category term="blog" scheme="http://cybatk.com/tags/blog/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>C++ Tail Call Optimization</title>
+    <link href="http://cybatk.com/2017/03/09/C-Tail-Call-Optimization/"/>
+    <id>http://cybatk.com/2017/03/09/C-Tail-Call-Optimization/</id>
+    <published>2017-03-09T15:39:56.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>一直没有验证过C++对尾递归的优化，同事讨论起来，写个代码验证下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">tailrecsum</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span>&amp; running_total)</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">if</span>(x == <span class="number">0</span>)&#123;</div><div class="line">        <span class="keyword">return</span> running_total;</div><div class="line">    &#125;</div><div class="line">    usleep(<span class="number">100</span>);</div><div class="line">    <span class="comment">// GOOD</span></div><div class="line">    running_total += x;</div><div class="line">    <span class="keyword">return</span> tailrecsum(x - <span class="number">1</span>, running_total);</div><div class="line">    <span class="comment">// BAAD</span></div><div class="line">    <span class="comment">//return x + tailrecsum(x - 1, running_total);</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">int</span> r = <span class="number">0</span>;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tailrecsum(<span class="number">10</span>        , r) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tailrecsum(<span class="number">100</span>       , r) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tailrecsum(<span class="number">1000</span>      , r) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tailrecsum(<span class="number">10000</span>     , r) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tailrecsum(<span class="number">100000</span>    , r) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; tailrecsum(<span class="number">2000000000</span>, r) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上述代码，GOOD的两行就是尾递归模式，BAAD的一行是普通递归的模式<br>如果把usleep睡眠屏蔽，直接g++编译，执行立马会 “Segmentation fault: 11”<br>把usleep放开，会观察到内存持续上升，这就是栈调用占用的内存</p>
+<p>但是只要开启了 -O1/2/3 优化模式编译，把usleep屏蔽掉，结果会很快返回（当然，结果是错的，溢出成负数）。把usleep放开，可以观察到内存会恒定不变，此时递归调用不会随着调用过程占用额外的内存。</p>
+<p>如果是BAAD的代码，-O1/2/3 编译也是没用的。</p>
+<p>结论：</p>
+<ul>
+<li>编译器能够针对尾递归代码进行执行优化，此时递归调用基本相当于一个循环，前提是要 -O1/2/3 开启编译优化</li>
+<li>编译器不会把非尾递归的代码优化成尾递归的效果，绿色低碳程序员请多留心，提高自己姿势水平，代码一小行，烧掉一棵树</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;一直没有验证过C++对尾递归的优化，同事讨论起来，写个代码验证下&lt;/p&gt;
+&lt;figure class=&quot;highlight c++&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class
+    
+    </summary>
+    
+    
+      <category term="C++" scheme="http://cybatk.com/tags/C/"/>
+    
+      <category term="Tail Call Optimization" scheme="http://cybatk.com/tags/Tail-Call-Optimization/"/>
+    
+      <category term="Tail Call" scheme="http://cybatk.com/tags/Tail-Call/"/>
+    
+      <category term="TCO" scheme="http://cybatk.com/tags/TCO/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>FloCon 2017</title>
+    <link href="http://cybatk.com/2017/01/15/FloCon-2017/"/>
+    <id>http://cybatk.com/2017/01/15/FloCon-2017/</id>
+    <published>2017-01-15T14:11:00.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>Here is the slide of my talk on <a href="http://www.cert.org/flocon/" target="_blank" rel="external">FloCon 2017</a>.</p>
+<div class="note success"><p><strong> DOWNLOAD:  <a href="/2017/01/15/FloCon-2017/BackboneNetworkDRDoSAttackMonitoringAndAnalysis.pdf">Backbone Network DRDoS Attack Monitoring and Analysis.pdf</a> </strong></p>
+</div>
+<ul>
+<li>DRDoS accounts for over 60% of all DDoS, hard to track, annoying bandwidth consumption, larger &amp; larger</li>
+<li>DNS ＋ NTP ＋ CharGEN reflection account for over 77% of all DRDoS events</li>
+<li>DRDoS amplifiers has been bing used heavily, over 30% of our detected DNS amplifiers are bing used for DRDoS right now</li>
+<li>DNS reflection using ANY query, NTP reflection using MONLIST command, CharGEN …, all of little practical use</li>
+<li>Kill top amplifiers’ in-traffic, solve the majority problem, no effect to normal network, hands together, let’s DO it.</li>
+</ul>
+<hr>
+<p>Happy time at San Diego.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Here is the slide of my talk on &lt;a href=&quot;http://www.cert.org/flocon/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;FloCon 2017&lt;/a&gt;.&lt;/p&gt;
+&lt;div class=&quot;not
+    
+    </summary>
+    
+    
+      <category term="FloCon" scheme="http://cybatk.com/tags/FloCon/"/>
+    
+      <category term="netflow" scheme="http://cybatk.com/tags/netflow/"/>
+    
+      <category term="DRDoS" scheme="http://cybatk.com/tags/DRDoS/"/>
+    
+      <category term="DDoS" scheme="http://cybatk.com/tags/DDoS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Security Bsides Delaware 2016</title>
+    <link href="http://cybatk.com/2016/10/16/Security-Bsides-Delaware-2016/"/>
+    <id>http://cybatk.com/2016/10/16/Security-Bsides-Delaware-2016/</id>
+    <published>2016-10-16T14:41:11.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>Here is the slide of my talk on <a href="http://www.bsidesdelaware.com/" target="_blank" rel="external">Security Bsides Delaware 2017</a>.</p>
+<div class="note success"><p><strong> DOWNLOAD:  <a href="/2016/10/16/Security-Bsides-Delaware-2016/BackboneNetworkSecurityVisibilityInPractice.pdf">Backbone Network Security Visibility In Practice.pdf</a> </strong></p>
+</div>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Here is the slide of my talk on &lt;a href=&quot;http://www.bsidesdelaware.com/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Security Bsides Delaware 2017&lt;/a&gt;
+    
+    </summary>
+    
+    
+      <category term="DDoS" scheme="http://cybatk.com/tags/DDoS/"/>
+    
+      <category term="Scan" scheme="http://cybatk.com/tags/Scan/"/>
+    
+      <category term="network security" scheme="http://cybatk.com/tags/network-security/"/>
+    
+      <category term="security visibility" scheme="http://cybatk.com/tags/security-visibility/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>c++ 通过 frind 来获取一个类的 private 成员变量</title>
+    <link href="http://cybatk.com/2015/03/16/c-frind-get-private-value/"/>
+    <id>http://cybatk.com/2015/03/16/c-frind-get-private-value/</id>
+    <published>2015-03-16T10:46:38.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>有个朋友问到一个给定的不可变的类，且是安装好的三方库，不能改代码，不能重新编译，想获取其私有变量，有什么方法？<br>答案是友元～</p>
+<p>lib头文件 t.h<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"></div><div class="line"><span class="keyword">class</span> P&#123;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        <span class="built_in">std</span>::<span class="built_in">string</span> private_string;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        P();</div><div class="line"></div><div class="line">    <span class="comment">//friend class G;    // ADD THIS LINE</span></div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
+<p>lib代码 t.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"t.h"</span></span></div><div class="line"></div><div class="line">P::P():private_string(<span class="string">"private_string"</span>)&#123;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>上面两个文件编译为libt。注意这时候上面friend是屏蔽掉的，因为我们假定原始给定的头文件没有友元。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ -c <span class="_">-f</span>PIC t.cc -o t.o</div><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ -shared -o libt.so t.o</div></pre></td></tr></table></figure></p>
+<p>我们自己的测试代码m.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"t.h"</span></span></div><div class="line"></div><div class="line"><span class="keyword">struct</span> G&#123;</div><div class="line">    <span class="built_in">std</span>::<span class="function"><span class="built_in">string</span> <span class="title">get_private</span><span class="params">(<span class="keyword">const</span> P&amp; p)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> p.private_string;</div><div class="line">    &#125;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></div><div class="line">&#123;</div><div class="line">    P p;</div><div class="line">    G g;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; g.get_private(p) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>此时如果不把上述friend行打开，直接编译会报错：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ m.cc <span class="_">-lt</span> -L./</div><div class="line">m.cc:6:18: error: <span class="string">'private_string'</span> is a private member of <span class="string">'P'</span></div><div class="line">        <span class="built_in">return</span> p.private_string;</div><div class="line">                 ^</div><div class="line">./t.h:5:21: note: declared private here</div><div class="line">        std::string private_string;</div><div class="line">                    ^</div><div class="line">1 error generated.</div></pre></td></tr></table></figure></p>
+<p>这是符合预期的，因为就是要测试friend行代码的效用嘛～打开后就能正常编译执行。<br>我的测试环境是mac+clang，如果是linux＋g++，最后编译可执行文件时需要增加运行期lib查找路径 -Wl,-rpath=./</p>
+<p>总结：</p>
+<ul>
+<li>class的private/protected权限是编译期的行为，提供的是编译期的内存获取权限的检查，编译完成后就没有任何约束了</li>
+<li>因此，我们想要获取一个给定对象的私有变量，是我们自己代码编译时期的权限检查，只要保证自己代码编译时有friend来放开权限即可</li>
+</ul>
+<div class="note warning"><p>如果给定一个类，对于其私有成员变量，直接get有时候可以理解，绝不要直接set，在不知道原本class实现的前提下，极有可能会破坏其内部实现的逻辑</p>
+</div>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;有个朋友问到一个给定的不可变的类，且是安装好的三方库，不能改代码，不能重新编译，想获取其私有变量，有什么方法？&lt;br&gt;答案是友元～&lt;/p&gt;
+&lt;p&gt;lib头文件 t.h&lt;br&gt;&lt;figure class=&quot;highlight c++&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class
+    
+    </summary>
+    
+    
+      <category term="c++" scheme="http://cybatk.com/tags/c/"/>
+    
+      <category term="friend" scheme="http://cybatk.com/tags/friend/"/>
+    
+      <category term="private" scheme="http://cybatk.com/tags/private/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>劫持tshark使其更方便的和我们自有系统交互</title>
+    <link href="http://cybatk.com/2015/03/11/wireshark-tshark-hijack/"/>
+    <id>http://cybatk.com/2015/03/11/wireshark-tshark-hijack/</id>
+    <published>2015-03-11T10:52:01.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="劫持tshark解包接口"><a href="#劫持tshark解包接口" class="headerlink" title="劫持tshark解包接口"></a>劫持tshark解包接口</h2><hr>
+<p>wireshark是一款伟大的工具，tshark是wireshark的命令行工具，具有丰富的功能。<br>但是tshark只能将数据包抓取解析并按照既定格式打印出来，没办法做更自由的数据格式，比如把特定数据形成Porotobuf格式，也没法对外交互，比如发送到某个socket等。</p>
+<p>So，let‘s make it.</p>
+<p>简单说一下环境：</p>
+<ul>
+<li>Centos6</li>
+<li>wireshark-1.10.8 源码</li>
+</ul>
+<p>要劫持接口，那就追代码，hark源码的结构可以在其他地方找到更详细的剖析，我们只需要知道以下几个点：</p>
+<ul>
+<li>各种协议包的解析在wireshark-1.10.8/epan/dissectors/ 下面</li>
+<li>根据协议解包是个顺序的调用的过程，比如epan/dissectors/packet-ip.c中解析完IP协议，然后调用epan/dissectors/packet-udp.c来解析UDP协议，依次往后，直至没有新协议数据需要解析为止</li>
+<li>协议包数据解析完是一个proto_tree结构，这棵树的添加构造在epan/proto.c中，上面的dissector都会掉用proto.c中的方法来将解析出来的数据添加到树中</li>
+<li>注意一个header_field_info结构，内部成员name是展示的名字， abbrev是解析包过程中用到的过滤名字，比如ip.src udp.dstport等，还有一个type标识对应的value应该是什么数据</li>
+<li>proto.c设置数据的时候，会调用5个基本类型的数据设置方法 fvalue_set fvalue_set_sinteger fvalue_set_uinteger fvalue_set_integer64 fvalue_set_floating，代码在epan/ftypes/ftypes.c</li>
+</ul>
+<p>数据流收缩的最小的口径就是在ftypes.c中，从这里入手才能最小代码的改动来劫持到所有数据。但是这里的函数获取到的只有value，而我们需要key和value都能一一对应上，因此还需要在调用者proto.c上动点手脚。</p>
+<hr>
+<h2 id="方法1"><a href="#方法1" class="headerlink" title="方法1"></a>方法1</h2><ol>
+<li>创建如下文件shark_hijack.h</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">hijack_call</span><span class="params">(field_info *fi)</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">if</span>(! fi) <span class="keyword">return</span>;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">char</span>* finfo_name   = fi-&gt;hfinfo-&gt;name;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">char</span>* finfo_abbrev = fi-&gt;hfinfo-&gt;abbrev;</div><div class="line">    <span class="keyword">int</span> finfo_type = (fi-&gt;hfinfo) ? fi-&gt;hfinfo-&gt;type : FT_NONE;</div><div class="line">    <span class="keyword">switch</span> (finfo_type) &#123;</div><div class="line">        <span class="comment">// do your work here, you can get setted value like:</span></div><div class="line">        <span class="comment">// fvalue_get(&amp;fi-&gt;value)</span></div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set(i ...) do&#123;           \</span></div><div class="line">    fvalue_set(i);                      \</div><div class="line">    hijack_call(fi);                    \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_uinteger(i ...) do&#123;  \</span></div><div class="line">    fvalue_set_uinteger(i);             \</div><div class="line">    hijack_call(fi);                    \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_sinteger(i ...) do&#123;  \</span></div><div class="line">    fvalue_set_sinteger(i);             \</div><div class="line">    hijack_call(fi);                    \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_integer64(i ...) do&#123; \</span></div><div class="line">    fvalue_set_integer64(i);            \</div><div class="line">    hijack_call(fi);                    \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_floating(i ...) do&#123;  \</span></div><div class="line">    fvalue_set_floating(i);             \</div><div class="line">    hijack_call(fi);                    \</div><div class="line">&#125;while(0)                               \</div></pre></td></tr></table></figure>
+<ol>
+<li>将上述文件放在epan/ftypes/文件夹下，然后在epan/proto.c原文件最后一行include之后添加，如下行</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ftypes/shark_hijack.h"</span></span></div></pre></td></tr></table></figure>
+<ol>
+<li>这样，将原始的5个设置方法以宏的形式替换，在原始操作之后，调用hijack_call，将整个field_info指针传递过去，这里我们就能获取到name abbrev value，就可以根据自己的需求做些想做的事情了。这样的完整的样例可以在 <a href="https://github.com/xuy1202/xylibs/tree/master/tshark_wrap" target="_blank" rel="external">https://github.com/xuy1202/xylibs/tree/master/tshark_wrap</a> 看到</li>
+</ol>
+<hr>
+<h2 id="方法2"><a href="#方法2" class="headerlink" title="方法2"></a>方法2</h2><p>上面的方法最简单，但是需要在hijack_call中做类型判断，我们可以将修改面扩大一点，但是整体上更简单</p>
+<ol>
+<li>将上述shark_hijack.h修改为如下，还是用宏劫持的方式</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shark_id_dispatch_string</span><span class="params">(<span class="keyword">int</span> id, <span class="keyword">const</span> <span class="keyword">char</span>* val)</span></span>;</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shark_id_dispatch_int32</span><span class="params">(<span class="keyword">int</span> id, gint32 val)</span></span>;</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shark_id_dispatch_uint32</span><span class="params">(<span class="keyword">int</span> id, guint32 val)</span></span>;</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shark_id_dispatch_uint64</span><span class="params">(<span class="keyword">int</span> id, guint64 val)</span></span>;</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shark_id_dispatch_double</span><span class="params">(<span class="keyword">int</span> id, <span class="keyword">double</span> val)</span></span>;</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set(i ...) do&#123;           \</span></div><div class="line">    shark_id_dispatch_string(fi-&gt;hfinfo-&gt;id, fvalue_set(i)); \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_uinteger(i ...) do&#123;  \</span></div><div class="line">    shark_id_dispatch_uint32(fi-&gt;hfinfo-&gt;id, fvalue_set_uinteger(i)); \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_sinteger(i ...) do&#123;  \</span></div><div class="line">    shark_id_dispatch_int32(fi-&gt;hfinfo-&gt;id, fvalue_set_sinteger(i)); \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_integer64(i ...) do&#123; \</span></div><div class="line">    shark_id_dispatch_uint64(fi-&gt;hfinfo-&gt;id, fvalue_set_integer64(i)); \</div><div class="line">&#125;while(0)                               \</div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> fvalue_set_floating(i ...) do&#123;  \</span></div><div class="line">    shark_id_dispatch_double(fi-&gt;hfinfo-&gt;id, fvalue_set_floating(i)); \</div><div class="line">&#125;while(0)                               \</div></pre></td></tr></table></figure>
+<ol>
+<li>原始的fvalue_set等5个函数返回类型为void，我们要修改为接受value的类型，并将valuereturn出来，比如修改fvalue_set为如下</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">gpointer                                                              <span class="comment">// 将void换成接受的value的类型</span></div><div class="line">fvalue_set(<span class="keyword">fvalue_t</span> *fv, gpointer value, gboolean already_copied)</div><div class="line">&#123;</div><div class="line">    g_assert(fv-&gt;ftype-&gt;set_value);</div><div class="line">    fv-&gt;ftype-&gt;set_value(fv, value, already_copied);</div><div class="line">    <span class="keyword">return</span> value;                                                      <span class="comment">// 这里是修改的return</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ol>
+<li><p>这样，我们就将value直接分类型转给了我们自己声明的shark_id_dispatch_string等5个方法, 我们可以在另外一个动态库中实现这5个方法，然后修改Makefile链接起来，这样以后只需要修改我们自己的so就能达到修改逻辑的目的</p>
+</li>
+<li><p>tricky的地方注意到了么，我们没有name，没有abbrev，而只有一个fi-&gt;hfinfo-&gt;id。这个id其实是thark编译的时候根据各个解包器生成的固定的id，如果在proto.c的proto_register_field_init函数return之前添加一行</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">printf</span>(<span class="string">"proto_register_field_init: %d-&gt;%s\n"</span>, hfinfo-&gt;id, hfinfo-&gt;abbrev);</div></pre></td></tr></table></figure>
+<p>编译执行开始，总能看到id和abbrev的固定映射关系，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">proto_register_field_init: 20587-&gt;dns.id</div><div class="line">proto_register_field_init: 20588-&gt;dns.qry.type</div><div class="line">proto_register_field_init: 20589-&gt;dns.qry.class</div><div class="line">proto_register_field_init: 20590-&gt;dns.qry.class</div><div class="line">proto_register_field_init: 20591-&gt;dns.qry.qu</div></pre></td></tr></table></figure>
+<p>因此，这样的映射表只需要知道，然后就完全可以根据id来做自己的逻辑了。</p>
+<hr>
+<p>Wish you happy, go nuts!</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;劫持tshark解包接口&quot;&gt;&lt;a href=&quot;#劫持tshark解包接口&quot; class=&quot;headerlink&quot; title=&quot;劫持tshark解包接口&quot;&gt;&lt;/a&gt;劫持tshark解包接口&lt;/h2&gt;&lt;hr&gt;
+&lt;p&gt;wireshark是一款伟大的工具，tshark是
+    
+    </summary>
+    
+    
+      <category term="wireshark" scheme="http://cybatk.com/tags/wireshark/"/>
+    
+      <category term="tshark" scheme="http://cybatk.com/tags/tshark/"/>
+    
+      <category term="hijack" scheme="http://cybatk.com/tags/hijack/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>markdown example</title>
+    <link href="http://cybatk.com/1984/12/02/markdown+example/"/>
+    <id>http://cybatk.com/1984/12/02/markdown+example/</id>
+    <published>1984-12-01T16:00:00.000Z</published>
+    <updated>2017-03-20T17:31:23.000Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote class="blockquote-center"><p>O Ever</p>
+</blockquote>
+<blockquote><p>!!!: hexo tag doc </p>
+<footer><strong>@xuy1202</strong><cite><a href="https://hexo.io/docs/tag-plugins.html" target="_blank" rel="external">hexo.io/docs/tag-plugins.html</a></cite></footer></blockquote>
+<hr>
+<blockquote><p>Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.</p>
+<footer><strong>David Levithan</strong><cite>Wide Awake</cite></footer></blockquote>
+<hr>
+<blockquote><p>Every interaction is both precious and an opportunity to delight.</p>
+<footer><strong>Seth Godin</strong><cite><a href="http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html" target="_blank" rel="external">Welcome to Island Marketing</a></cite></footer></blockquote>
+<hr>
+<blockquote><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque hendrerit lacus ut purus iaculis feugiat. Sed nec tempor elit, quis aliquam neque. Curabitur sed diam eget dolor fermentum semper at eu lorem.</p>
+</blockquote>
+<h1 id="Head1"><a href="#Head1" class="headerlink" title="Head1"></a>Head1</h1><h2 id="This-is-an-H2"><a href="#This-is-an-H2" class="headerlink" title="This is an H2"></a>This is an H2</h2><h1 id="Head2"><a href="#Head2" class="headerlink" title="Head2"></a>Head2</h1><h2 id="sub-title"><a href="#sub-title" class="headerlink" title="sub title"></a>sub title</h2><h2 id="sub-title-1"><a href="#sub-title-1" class="headerlink" title="sub title"></a>sub title</h2><blockquote>
+<p>This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,<br>consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.<br>Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.</p>
+</blockquote>
+<div class="note default"><p>default </p>
+</div>
+<div class="note primary"><p>primary </p>
+</div>
+<div class="note success"><p>success </p>
+</div>
+<div class="note info"><p>info    </p>
+</div>
+<div class="note warning"><p>warning </p>
+</div>
+<div class="note danger"><p>danger  </p>
+</div>
+<!--
+![](/images/touxiang.jpg)
+<span itemprop="image" itemscope itemtype="http://schema.org/ImageObject"><img itemprop="url image" src="/images/touxiang.jpg" class="full-image" alt="alt" title="title" /><meta itemprop="width" content="auto"><meta itemprop="height" content="auto"></span>
+<p>–&gt;</p>
+-->]]></content>
+    
+    <summary type="html">
+    
+      &lt;blockquote class=&quot;blockquote-center&quot;&gt;&lt;p&gt;O Ever&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;&lt;p&gt;!!!: hexo tag doc &lt;/p&gt;
+&lt;footer&gt;&lt;strong&gt;@xuy1202&lt;/strong&gt;&lt;ci
+    
+    </summary>
+    
+    
+      <category term="example" scheme="http://cybatk.com/tags/example/"/>
+    
+  </entry>
+  
+</feed>
