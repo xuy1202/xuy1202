@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://cybatk.com/resource/index.html</loc>
+    
+    <lastmod>2017-03-23T13:19:05.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://cybatk.com/1984/12/02/markdown+example/</loc>
+    
+    <lastmod>2017-03-23T13:17:53.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://cybatk.com/2017/03/13/pdns-process-notes/</loc>
     
     <lastmod>2017-03-23T10:22:59.000Z</lastmod>
@@ -16,21 +30,7 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/1984/12/02/markdown+example/</loc>
-    
-    <lastmod>2017-03-20T17:31:23.000Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://cybatk.com/2015/03/16/c-frind-get-private-value/</loc>
-    
-    <lastmod>2017-03-20T17:31:23.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://cybatk.com/2017/03/11/hexo-github-blog/</loc>
     
     <lastmod>2017-03-20T17:31:23.000Z</lastmod>
     
@@ -44,7 +44,7 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2017/03/09/C-Tail-Call-Optimization/</loc>
+    <loc>http://cybatk.com/2017/01/15/FloCon-2017/</loc>
     
     <lastmod>2017-03-20T17:31:23.000Z</lastmod>
     
@@ -65,7 +65,14 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2017/01/15/FloCon-2017/</loc>
+    <loc>http://cybatk.com/2017/03/11/hexo-github-blog/</loc>
+    
+    <lastmod>2017-03-20T17:31:23.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://cybatk.com/2017/03/09/C-Tail-Call-Optimization/</loc>
     
     <lastmod>2017-03-20T17:31:23.000Z</lastmod>
     

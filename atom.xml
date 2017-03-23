@@ -209,13 +209,13 @@
     </summary>
     
     
-      <category term="DDoS" scheme="http://cybatk.com/tags/DDoS/"/>
-    
       <category term="FloCon" scheme="http://cybatk.com/tags/FloCon/"/>
     
       <category term="netflow" scheme="http://cybatk.com/tags/netflow/"/>
     
       <category term="DRDoS" scheme="http://cybatk.com/tags/DRDoS/"/>
+    
+      <category term="DDoS" scheme="http://cybatk.com/tags/DDoS/"/>
     
   </entry>
   
@@ -364,14 +364,16 @@
   </entry>
   
   <entry>
-    <title>markdown example</title>
+    <title>hexo+next主题的markdown示范样例备忘</title>
     <link href="http://cybatk.com/1984/12/02/markdown+example/"/>
     <id>http://cybatk.com/1984/12/02/markdown+example/</id>
     <published>1984-12-01T16:00:00.000Z</published>
-    <updated>2017-03-20T17:31:23.000Z</updated>
+    <updated>2017-03-23T13:17:53.000Z</updated>
     
-    <content type="html"><![CDATA[<blockquote class="blockquote-center"><p>O Ever</p>
+    <content type="html"><![CDATA[<figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">link:</div><div class="line"> - http://cybatk.com/   &lt;!-- 修改title的链接 --&gt;</div><div class="line"></div><div class="line">photos:</div><div class="line"> - http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg</div><div class="line"> - http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg</div><div class="line"><span class="section"> - http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg</span></div><div class="line">---</div></pre></td></tr></table></figure>
+<blockquote class="blockquote-center"><p>这篇blog没有干货，所以一上来就得有点趣味</p>
 </blockquote>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&#123;% centerquote %&#125;</div><div class="line">这篇blog没有干货，所以一上来就得有点趣味</div><div class="line">&#123;% endcenterquote %&#125;</div></pre></td></tr></table></figure>
 <blockquote><p>!!!: hexo tag doc </p>
 <footer><strong>@xuy1202</strong><cite><a href="https://hexo.io/docs/tag-plugins.html" target="_blank" rel="external">hexo.io/docs/tag-plugins.html</a></cite></footer></blockquote>
 <hr>
@@ -398,6 +400,7 @@
 </div>
 <div class="note danger"><p>danger  </p>
 </div>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&#123;% note default %&#125; default &#123;% endnote %&#125;</div><div class="line">&#123;% note primary %&#125; primary &#123;% endnote %&#125;</div><div class="line">&#123;% note success %&#125; success &#123;% endnote %&#125;</div><div class="line">&#123;% note info    %&#125; info    &#123;% endnote %&#125;</div><div class="line">&#123;% note warning %&#125; warning &#123;% endnote %&#125;</div><div class="line">&#123;% note danger  %&#125; danger  &#123;% endnote %&#125;</div></pre></td></tr></table></figure>
 <!--
 ![](/images/touxiang.jpg)
 <span itemprop="image" itemscope itemtype="http://schema.org/ImageObject"><img itemprop="url image" src="/images/touxiang.jpg" class="full-image" alt="alt" title="title" /><meta itemprop="width" content="auto"><meta itemprop="height" content="auto"></span>
@@ -406,10 +409,7 @@
     
     <summary type="html">
     
-      &lt;blockquote class=&quot;blockquote-center&quot;&gt;&lt;p&gt;O Ever&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;blockquote&gt;&lt;p&gt;!!!: hexo tag doc &lt;/p&gt;
-&lt;footer&gt;&lt;strong&gt;@xuy1202&lt;/strong&gt;&lt;ci
+      &lt;figure class=&quot;highlight markdown&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;
     
     </summary>
     
