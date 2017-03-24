@@ -340,7 +340,7 @@
               
                 
                 <a class="post-title-link" href="/2017/03/13/pdns-process-notes/" itemprop="url">
-                  PDNS系统设计实现总结（on going）
+                  PDNS系统设计实现总结
                 </a>
               
             
@@ -394,7 +394,20 @@
       
         
           
-            <h1 id="数据采集点的区别"><a href="#数据采集点的区别" class="headerlink" title="数据采集点的区别"></a>数据采集点的区别</h1><p>数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据，那些能做，哪些不能做。不同的采集点，采集到的数据不一样，量有大小的区别，覆盖范围有区别，可以提取出来的特征不一样，因此对于既定的分析目标，可能一个采集点的数据可以轻而易举的完成，而另外一个采集点可能做起来会非常费力，甚或天然的就无法做到。</p>
+            <p>从14年中开始，我们团队开始做中国最大的PassiveDNS系统，并在基本的PDNS系统之上，衍生了很多的额外的功能服务。当前我们有:</p>
+<ul>
+<li>flint: 基本的passive dns系统，domain-ip ip-domain的映射关系的历史记录查询. <a href="https://passivedns.cn" target="_blank" rel="external">passivedns.cn</a>，只对安全公司可信分析人员开放</li>
+<li>flint.real: flint是所有历史记录的数据，这个flint.real则是最近一小时内的domain-ip/ip-domain的映射关系，数据实时分析的时候，实时的关系更重要</li>
+<li>domain_stat: 域名访问统计，可以区分不同的请求类型，不同的返回类型，不同的数据节点</li>
+<li>domain_access/client_access: 查询一段时间内，一个domain被哪些client访问，一个client都访问了哪些domain，交叉访问的记录数据</li>
+<li>profile_domain/profile_client/profile_dnserv: domain/client/dnserv的profile数据，比如一个域名在一个时间点，被谁访问，来自哪些原端口，tid分别是多少，请求类型的分布是如何，返回的数据是如何分布的，响应这个domain 的dnserv都有哪些等等。在此基础上，可以实时判定诸如RSD攻击，子域名爆破，反射放大等各种安全事件</li>
+<li>pdns_capture: 给定过滤条件，实时抓取最新的DNS记录数据</li>
+<li>dtree：域名查找服务，给定一个模式，可以是子域名，可以是wildcard，可以是正则表达式，快速的在所有FQDN中查找符合模式的域名。很多安全分析文章都会对敏感域名打码，对我们而言，几乎天下无码。</li>
+</ul>
+<p>这是我在当前团队做的第一个服务，2年多来也一直在改进维护，除了前端接入原始数据是同事在做，中间的数据流，处理分析，入库，查询接口，都是我在做。其中艰辛很多，也感觉学到很多，资源不够如何权衡妥协，网络不如意服务如何调度分派，数据放量如何动态扩展，很多细节如果不看代码都要忘记了。刚好年初数据放量，重新梳理代码优化了一下性能，趁机聊作记录以备忘。</p>
+<div class="note default"><p>出于保密的需求，具体架构不能说太细，数据库设计不会涉及，更多的是偏重功能+场景+实现妥协技巧这些容易遗忘的东西</p>
+</div>
+<h1 id="数据采集点的区别"><a href="#数据采集点的区别" class="headerlink" title="数据采集点的区别"></a>数据采集点的区别</h1><p>数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据，那些能做，哪些不能做。不同的采集点，采集到的数据不一样，量有大小的区别，覆盖范围有区别，可以提取出来的特征不一样，因此对于既定的分析目标，可能一个采集点的数据可以轻而易举的完成，而另外一个采集点可能做起来会非常费力，甚或天然的就无法做到。</p>
 <p><img src="/2017/03/13/pdns-process-notes/pdns.frame.png" alt=""></p>
 <blockquote>
 <p>由于懒，我直接抠我在FloCon2017上的talk的PPT的一页来说明。</p>
@@ -419,7 +432,7 @@
 <p>举例来说，RSD攻击一般来说会通过多个open resolver来打，但是也可能伪造流量直接请求到authoritative server，如果是后者，那在点【2】的位置就完全看不到，但是在点【3】可以看到。</p>
 <p>再者，点【3】是client-focused，比如反射放大攻击，一次攻击可能动用上万个open resolver，在点【2】的单个open resolver处很可能被忽略掉，但是点【3】看到的是一个client ip接受来自上万个open resolver的响应，想故意漏掉都比较难吧。</p>
 <p>甚或，这里我们可以看到query without response 有去无回数据, response without query无中生有数据，看到一个DNS服务器将任意domain的query响应为一个固定的IP等等，具体有什么用，think～</p>
-<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>上述三个数据采集点是做DNS数据分析一般的，常规的，最有效的数据采集位置，此外前后两端的数据采集点也要注意。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>上述三个数据采集点是做DNS数据分析一般的，常规的，最有效的数据采集位置。<strong> 我们很富，我们都有</strong> 。此外前后两端的数据采集点也要注意。</p>
 <h3 id="authority-server-边界"><a href="#authority-server-边界" class="headerlink" title="authority server 边界"></a>authority server 边界</h3><p>麻烦各个NS管理员，如果闲了，看看自己的DNS服务器处理的请求都是什么，有没有开泛解析，有没有配置错误将一个权威服务器开启了递归查询功能。我们的数据表明，常被利用的DNS反射节点中，至少2%是开了递归查询功能的权威服务器，无意间就给反射放大攻击添柴助力。</p>
 <h3 id="客户端网卡"><a href="#客户端网卡" class="headerlink" title="客户端网卡"></a>客户端网卡</h3><p>说一个场景，用户电脑，没人操作的时候，恶意软件可没闲着，各种可疑的黑网站，DGA这时候都会突兀的出现。</p>
 <h3 id="不可说"><a href="#不可说" class="headerlink" title="不可说"></a>不可说</h3><p>实际上，任何可以获取DNS解析记录的地方，其数据可能都有独到可用之处。尤其考虑到数据获取的场景context，简单来说，场景越黑，数据越黑。你有黑场景的数据可分享么？如果有，请联系我～</p>
@@ -445,11 +458,12 @@
 <p>根据需求，如果后续的分析过程是以domain为核心的，那就从hasher来获取，所有*.test.domain都会被分发到一个同一个key下。如果想看某个client ip的情况，那就从sensor直接获取，那同一个client ip的访问行为会集中发布在同一个key上。</p>
 <p>提取SLD的过程，不要简单的从后向前数点，com.cn等多级的TLD和com等单级的TLD判断起来会比较麻烦费力。先将所有TLD数据load成为一个trie tree，来的每一条数据，将FQDN从后向前遍历到最深，然后接着遍历到结尾或者下一个.的位置即可，考虑到SLD的长度基本都会在10个字符以内，这样的算法可以认为是O(1)的。</p>
 <h2 id="LRU-去重"><a href="#LRU-去重" class="headerlink" title="LRU 去重"></a>LRU 去重</h2><p>DNS原始请求按照域名来看 <strong> 永远是大头长尾 </strong> 的数据形态，top 100网站的访问量占据了所有访问请求的半壁江山，因此一个放置在足够靠前位置的LRU cache，就可以有效的对大头数据进行去重缩量。一个百万size的大小的cache，可以将原始数据缩减一个数量级。</p>
-<h2 id="disposable-domain"><a href="#disposable-domain" class="headerlink" title="disposable domain"></a>disposable domain</h2><p>处理过程的数据量缩减了就OK了么？NO。<br>当前，DNS服务被滥用的非常厉害，很多的域名查询已经不是原始的domain-ip映射关系的作用，有的用来做数据上报，有的用来做request-response服务，还有更多的不知道在干什么。例如：</p>
+<h2 id="Disposable-domain"><a href="#Disposable-domain" class="headerlink" title="Disposable domain"></a>Disposable domain</h2><p>处理过程的数据量缩减了就OK了么？NO。<br>当前，DNS服务被滥用的非常厉害，很多的域名查询已经不是原始的domain-ip映射关系的作用，有的用来做数据上报，有的用来做request-response服务，还有更多的不知道在干什么。例如：</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">141.131.152.01.zen.spamhaus.org</div><div class="line">128.185.146.01.zen.spamhaus.org</div><div class="line">161.101.124.01.zen.spamhaus.org</div><div class="line">125.166.112.01.zen.spamhaus.org</div><div class="line">112.147.171.01.zen.spamhaus.org</div><div class="line">187.115.108.01.zen.spamhaus.org</div><div class="line">115.118.145.01.zen.spamhaus.org</div><div class="line">145.119.155.01.zen.spamhaus.org</div><div class="line"></div><div class="line">2az8s49ydcfmtjk.q13795113801.pw</div><div class="line">2iu5dsf679glqjp.q13795113801.pw</div><div class="line">2icpazfdh3ewl59.q13795113801.pw</div><div class="line">298gc7pfdy5a6jh.q13795113801.pw</div><div class="line">29oiqrcle3ymg4u.q13795113801.pw</div><div class="line">243twlvqkovhmye.q13795113801.pw</div><div class="line">28xmi5p63gskjr9.q13795113801.pw</div><div class="line">27n8pqgihzl6ts9.q13795113801.pw</div><div class="line">257dsqmhzvx3n8w.q13795113801.pw</div><div class="line">27lvywg4t8eocm3.q13795113801.pw</div><div class="line"></div><div class="line">0.209d801.1033.14b4.15c2.3e9b.10.0.00c674b565ce48ea12966d1b82b66522.avqs.mcafee.com</div><div class="line">0.60ab089.41.14b4.15c2.3e9b.10.0.087321142026ece602c83ab04528010c.avqs.mcafee.com</div><div class="line">0.7092081.d960073.14b4.15b4.3e9a.10.0.09f2c55b594c11a6562f932ce8654ef0.avqs.mcafee.com</div><div class="line">0.7091081.1033.14b4.15b4.3e9a.10.0.05441f6ba15c1f633a3968332fe9b9a9.avqs.mcafee.com</div><div class="line">0.400001.d960073.14b4.15a2.3e9a.10.0.0c44e2b096e7c988856103b74d5b4766.avqs.mcafee.com</div><div class="line">0.60fa021.c871031.14b4.15b4.3e9a.10.0.0ac236f269070480252be0b92f545d59.avqs.mcafee.com</div><div class="line">0.70f6801.c051031.14b4.15e0.3e9a.10.0.0c406d44050caac10e17eaa6c33e1f4f.avqs.mcafee.com</div><div class="line">0.70f2008.20033.14b4.15b4.3e9a.10.0.10a2f663fdc511fd52bfcfd0a8837549.avqs.mcafee.com</div><div class="line">x-0.19-23000809.0.16a8.1ff0.6592.200.0.1113g9hwlzvrnims8qbe2ublbi.avqs.mcafee.com</div><div class="line">x-0.19-23000809.0.16a8.1fcd.6592.200.0.1113g9hwlzvrnims8qbe2ublbi.avqs.mcafee.com</div><div class="line"></div><div class="line">123456789123456789.3218721830764663770520984289166039746476607721908141260485540.5020666520264355071788964119716022440607979911188348837802609.11111111111111111111111111111111111111111111111111111111111111.top</div><div class="line">123456789123456789.3218721830764663770520984289166039746476607721908141260485540.5020666520264355071788964119716022440607979911188348837802609.11111111111111111111111111111111111111111111111111111111111111.top</div><div class="line">www.123456789123456789.3218721830764663770520984289166039746476607721908141260485540.5020666520264355071788964119716022440607979911188348837802609.11111111111111111111111111111111111111111111111111111111111111.top</div><div class="line">02609.11111111111111111111111111111111111111111111111111111111111111.top</div><div class="line">123456789123456789.3218721830764663770520984289166039746476607721908141260485540.5020666520264355071788964119716022440607979911188348837802609.11111111111111111111111111111111111111111111111111111111111111.top</div></pre></td></tr></table></figure>
 <p>这种“用一次就丢的”域名，可能已经不属于我们想要的domain-ip mapping关系，不在我们想要分析的范围内。<br>现实中，尽管他们占据所有原始请求数据的比例不高，远远比不上top domain的请求量，但是如果按照unique(FQDN)来统计，这些类型的FQDN至少占据了最终入库的70%（刚随手统计了我们新增域名最近一个月的数据。也就是说，这部分数据可能不会对实时处理过程有严重影响，但是对最终的数据集的大小影响比较大。</p>
 <p>因此，我们可以选择一个合适的环节丢弃；即便不全部丢弃，也可以采样来降低数据集大小；或者选择性丢弃，只保留例如spamhaus结果为黑的部分。</p>
-<h2 id="“阶梯”采样"><a href="#“阶梯”采样" class="headerlink" title="“阶梯”采样"></a>“阶梯”采样</h2><p>但是，并不是所有处理环节都能使用LRU 去重，比如我要统计请求一个特定域名的客户端的分布的时候; 也并不是所有环节都能干掉disposable domain，比如我想看一个client ip都访问了哪些域名的时候。<br>以前者为例，此时要分析的数据中心就是一个域名，client ip是作为属性存在的，如果全部记录，数据量会非常庞大，但是如果针对全局数据采样，那可能长尾数据就被采丢了，而大头还是大头。正确的做法是，针对要分析的key，domain，对其属性进行采样，例如100个以内的client ip全记录, 100-1000个的时候只记录1/10， 1000个往上只记录1/100。这样，长尾数据会被完好的保留下来，而大头数据会被有效缩减，且能保留它的统计特征。</p>
+<h2 id="“阶梯”采样"><a href="#“阶梯”采样" class="headerlink" title="“阶梯”采样"></a>“阶梯”采样</h2><p>但是，并不是所有处理环节都能使用LRU 去重，比如我要统计请求一个特定域名的客户端的分布的时候; 也并不是所有环节都能干掉disposable domain，比如我想看一个client ip都访问了哪些域名的时候。</p>
+<p>以前者为例，此时要分析的数据中心就是一个域名，client ip是作为属性存在的，如果全部记录，数据量会非常庞大，但是如果针对全局数据采样，那可能长尾数据就被采丢了，而大头还是大头。正确的做法是，针对要分析的key，domain，对其属性进行采样，例如100个以内的client ip全记录, 100-1000个的时候只记录1/10， 1000个往上只记录1/100。这样，长尾数据会被完好的保留下来，而大头数据会被有效缩减，且能保留它的统计特征。</p>
 <hr>
 <h1 id="基本架构／数据流"><a href="#基本架构／数据流" class="headerlink" title="基本架构／数据流"></a>基本架构／数据流</h1><h2 id="PDNS-system"><a href="#PDNS-system" class="headerlink" title="PDNS system"></a>PDNS system</h2><p>从hasher开始，接入LRU cache做去重(deduper)，然后</p>
 <ul>
@@ -460,15 +474,26 @@
 <h2 id="real-time-data-query-system"><a href="#real-time-data-query-system" class="headerlink" title="real-time data query system"></a>real-time data query system</h2><p>从hasher开始，接入去掉disposable domain的数据，a.baidu.com -&gt; com.baidu.a .分割，类似trie tree的结构遍历节点存储count(stater)<br>5分钟为时间单位，遍历count tree，把结果入库，形成domain的访问统计</p>
 <h2 id="cross-access-system"><a href="#cross-access-system" class="headerlink" title="cross-access system"></a>cross-access system</h2><p>从stater开始，以domain为key对client阶梯采样，可以查询一个client在给定时间都访问过哪些域名，也可以查询一个域名在给定时间都被哪些client访问</p>
 <h2 id="real-time-analysis-system"><a href="#real-time-analysis-system" class="headerlink" title="real-time analysis system"></a>real-time analysis system</h2><p>从stater开始，分别对domain/client ip/dns server进行建模统计，实时检测DGA-client, DNS反射放大攻击， RSD攻击，子域名暴力破解等等异常行为</p>
+<h2 id="dtree"><a href="#dtree" class="headerlink" title="dtree"></a>dtree</h2><p>dtree存在的意义就是天下无码，这里所有disposable domain都可以去掉。<br>当前我们dtree集群加载数据为百亿FQDN，加上时间类型等基本信息，文件为500G大小，新的FQDN除去disposable domain外产生的速度比较慢，因此这部分数据还是允许都加载到内存的。</p>
 <hr>
-<h1 id="实时分析处理"><a href="#实时分析处理" class="headerlink" title="实时分析处理"></a>实时分析处理</h1><h2 id="归一化及数据预处理"><a href="#归一化及数据预处理" class="headerlink" title="归一化及数据预处理"></a>归一化及数据预处理</h2><ul>
+<h1 id="实时分析处理Points"><a href="#实时分析处理Points" class="headerlink" title="实时分析处理Points"></a>实时分析处理Points</h1><h2 id="归一化及数据预处理"><a href="#归一化及数据预处理" class="headerlink" title="归一化及数据预处理"></a>归一化及数据预处理</h2><ul>
 <li>大小写归一化</li>
 <li>域名合法性判定，有返回结果的不一定是好域名, 不符合域名规范的也可能是真实使用的域名</li>
 <li>rdata排序</li>
 <li>response error判定，比如被sinkhole的域名，比如本来是NXDOMAIN但是返回一个劫持IP等情况</li>
 </ul>
-<h2 id="domain-profile"><a href="#domain-profile" class="headerlink" title="domain profile"></a>domain profile</h2><h2 id="client-profile"><a href="#client-profile" class="headerlink" title="client profile"></a>client profile</h2><h2 id="DNS-server-profile"><a href="#DNS-server-profile" class="headerlink" title="DNS server profile"></a>DNS server profile</h2><h2 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h2><h2 id="随机程度的度量：熵？"><a href="#随机程度的度量：熵？" class="headerlink" title="随机程度的度量：熵？"></a>随机程度的度量：熵？</h2><hr>
-<h1 id="其他-1"><a href="#其他-1" class="headerlink" title="其他"></a>其他</h1><h2 id="日志系统"><a href="#日志系统" class="headerlink" title="日志系统"></a>日志系统</h2><h2 id="打点统计"><a href="#打点统计" class="headerlink" title="打点统计"></a>打点统计</h2><h2 id="分发缓存"><a href="#分发缓存" class="headerlink" title="分发缓存"></a>分发缓存</h2>
+<h2 id="Profile-domain-client-dnserv"><a href="#Profile-domain-client-dnserv" class="headerlink" title="Profile[domain/client/dnserv]"></a>Profile[domain/client/dnserv]</h2><p>特征越全越好，参考上面不同采集点的数据特点，可利用的数据属性也不一致，不过domain/client/dnserv尽管是不同维度，但是在同样的数据采集点，特征大部分还是相似的。</p>
+<p>Profile的意义不仅仅是可以直接判断各种异常，而更重要的意义是做为history snapshot，可以为后续的判断提供证据基础。</p>
+<h2 id="特征选择"><a href="#特征选择" class="headerlink" title="特征选择"></a>特征选择</h2><p>特征除了原始数据，一定要尽可能泛化，len／top／avg／diss／sequ／compose／pattern 各个维度的统计数据在特定场景下可以发挥决定性的作用。</p>
+<h2 id="随机程度的度量：熵？"><a href="#随机程度的度量：熵？" class="headerlink" title="随机程度的度量：熵？"></a>随机程度的度量：熵？</h2><p>域名随机性往往都喜欢用熵来做，不过我觉得不好。</p>
+<p>域名的作用本意是为了好记，正规的域名往往都是英文单词／词根／拼音／惯用简写的组合，看到一个随机字母的或者数字的，不是dga就是赌博色情这种常常变化的，那为什么不直接来判断域名的组合特征？</p>
+<p>所以，做个分词器，动态加载不同的词表就能做各种组合的判断了。拼音就那么几百个，英文词根也很少，单词不要用词典，去搜索一个google top words就很好用了，里面还包含常用的缩略语。一个比较长的串，可能会有多种组合形式，选择的时候，优选覆盖原始字串最长的，次选组合成分最少的，几乎就没错了。</p>
+<hr>
+<div class="note default"><p>匆匆忙忙，蜻蜓点水，权作备忘。</p>
+<p>一个一个子系统的做过来没什么感觉，回顾的时候发现要想写一个全景的流程图PPT都写不下，任何一个子系统的工程实践，几乎都有意料之外的约束。计算机艺术是妥协的艺术，满足了需求的就是好的。</p>
+<p>立志成为低碳程序员的我，相当一部分成就感就是来自于“只加需求，不加机器”。</p>
+</div>
+
           
         
       
@@ -534,7 +559,7 @@
               
                 
                 <a class="post-title-link" href="/2017/03/11/hexo-github-blog/" itemprop="url">
-                  using [hexo + next + github page] to build a blog
+                  使用[hexo + github + next]来构建个人博客
                 </a>
               
             
@@ -588,7 +613,13 @@
       
         
           
-            <h3 id="hexo的环境配置"><a href="#hexo的环境配置" class="headerlink" title="hexo的环境配置"></a>hexo的环境配置</h3><p>直接贴脚本</p>
+            <p>博客已经过时许久，不过我年纪渐长，记性渐差，还是需要个这么个东西来记录。<br>之前blog是在自己的vps，不过时不时被gfw干掉，操作不便，学习了下当今潮流，发现hexo+github+next半天就可以搞定，而且足够满足我的需求，于是搞起。</p>
+<ul>
+<li>hexo；一个基于node的静态博客生成发布引擎，简单来说，就是用户只用写markdown的文稿，后续生成页面、渲染、发布的过程都由hexo来搞定的</li>
+<li>github：实际是github的page，静态博客的载体，hexo会将内容发布到用户自己github的page，然后通过page来查看。如果有自己的域名，也可以cname到自己的github的page，这样就能通过自己的域名来访问。</li>
+<li>next：只是依赖hexo框架的一个主题样式，比较漂亮，而且还提供根据markdown的标题自动生成outline等辅助功能。</li>
+</ul>
+<h3 id="hexo的环境配置"><a href="#hexo的环境配置" class="headerlink" title="hexo的环境配置"></a>hexo的环境配置</h3><p>直接贴脚本</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">mkdir your.dir</div><div class="line"><span class="built_in">cd</span> your.dir</div><div class="line"></div><div class="line">npm install hexo-cli --save</div><div class="line">npm install hexo --save</div><div class="line"></div><div class="line">hexo init</div><div class="line"></div><div class="line">npm install hexo-generator-index --save</div><div class="line">npm install hexo-generator-archive --save</div><div class="line">npm install hexo-generator-category --save</div><div class="line">npm install hexo-generator-tag --save</div><div class="line">npm install hexo-server --save</div><div class="line">npm install hexo-deployer-git --save</div><div class="line">npm install hexo-deployer-heroku --save</div><div class="line">npm install hexo-deployer-rsync --save</div><div class="line">npm install hexo-deployer-openshift --save</div><div class="line">npm install hexo-renderer-marked@0.2 --save</div><div class="line">npm install hexo-renderer-stylus@0.2 --save</div><div class="line">npm install hexo-generator-feed@1 --save</div><div class="line">npm install hexo-generator-sitemap@1 --save</div><div class="line">npm install hexo-util --save</div><div class="line">npm install hexo-generator-searchdb --save</div><div class="line"></div><div class="line">git <span class="built_in">clone</span> https://github.com/iissnan/hexo-theme-next themes/next</div><div class="line"></div><div class="line"><span class="built_in">cd</span> themes/next</div><div class="line">npm install</div><div class="line">npm install -g bower</div><div class="line">npm install -g grunt-cli</div><div class="line"><span class="built_in">cd</span> -</div></pre></td></tr></table></figure>
 <p>此时，如果所有安装都没有意外，执行 hexo server 就可以启动http服务器在本机4000端口，有一个默认的hello world的主页面</p>
 <h3 id="省略github的配置以及github-page的部署过程"><a href="#省略github的配置以及github-page的部署过程" class="headerlink" title="省略github的配置以及github page的部署过程"></a>省略github的配置以及github page的部署过程</h3><h3 id="省略自己域名-到-github-page的映射过程"><a href="#省略自己域名-到-github-page的映射过程" class="headerlink" title="省略自己域名 到 github page的映射过程"></a>省略自己域名 到 github page的映射过程</h3><h3 id="hexo-配置"><a href="#hexo-配置" class="headerlink" title="hexo 配置"></a>hexo 配置</h3><p>两个配置文件：<br>1, yourdir/_config.yml: 这个是hexo的配置文件，包括使用哪个主题，这里我们使用next，就需要在该配置中设置。同时，还需要在这里配置要同步到的github page的地址。<br>2, yourdir/themes/next/_config.yml: 这个是主题相关的配置，包括页面布局，第三方评论统计接口等等，看看就明白了<br>3, 我的配置参见：<a href="https://github.com/xuy1202/blog" target="_blank" rel="external">https://github.com/xuy1202/blog</a></p>
@@ -1404,7 +1435,7 @@
           
             <div class="post-gallery-row">
               <a class="post-gallery-img fancybox"
-                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj0mfh60a00089jrzui8qzb6v"
+                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj0nvfkcd000abirzco4if1cf"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" itemprop="contentUrl"/>
               </a>
@@ -1412,7 +1443,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj0mfh60a00089jrzui8qzb6v"
+                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj0nvfkcd000abirzco4if1cf"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" itemprop="contentUrl"/>
               </a>
@@ -1420,7 +1451,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj0mfh60a00089jrzui8qzb6v"
+                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj0nvfkcd000abirzco4if1cf"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" itemprop="contentUrl"/>
               </a>
