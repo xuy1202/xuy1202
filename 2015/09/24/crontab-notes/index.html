@@ -83,7 +83,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Cyber-Security,Network-Security,网络安全,安全数据分析" />
+  <meta name="keywords" content="crontab," />
 
 
 
@@ -101,15 +101,25 @@
 
 
 
-<meta name="description" content="coder &amp; cyber security related things">
-<meta property="og:type" content="website">
-<meta property="og:title" content="CYBerATtacK">
-<meta property="og:url" content="http://cybatk.com/tags/Tail-Call/index.html">
+<meta name="description" content="为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。
+查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。
+我的监控命令用到了一个lsof，手动执行ok，但是crontab里面执行的时候是找不到的，需要设置PATH或者使用绝对路径。
+搜索“cron 环境变量 坑爹">
+<meta property="og:type" content="article">
+<meta property="og:title" content="crontab notes">
+<meta property="og:url" content="http://cybatk.com/2015/09/24/crontab-notes/index.html">
 <meta property="og:site_name" content="CYBerATtacK">
-<meta property="og:description" content="coder &amp; cyber security related things">
+<meta property="og:description" content="为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。
+查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。
+我的监控命令用到了一个lsof，手动执行ok，但是crontab里面执行的时候是找不到的，需要设置PATH或者使用绝对路径。
+搜索“cron 环境变量 坑爹">
+<meta property="og:updated_time" content="2017-03-27T02:30:51.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="CYBerATtacK">
-<meta name="twitter:description" content="coder &amp; cyber security related things">
+<meta name="twitter:title" content="crontab notes">
+<meta name="twitter:description" content="为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。
+查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。
+我的监控命令用到了一个lsof，手动执行ok，但是crontab里面执行的时候是找不到的，需要设置PATH或者使用绝对路径。
+搜索“cron 环境变量 坑爹">
 
 
 
@@ -137,13 +147,13 @@
 
 
 
-  <link rel="canonical" href="http://cybatk.com/tags/Tail-Call/"/>
+  <link rel="canonical" href="http://cybatk.com/2015/09/24/crontab-notes/"/>
 
 
 
 
 
-  <title> Tag: Tail Call | CYBerATtacK </title>
+  <title> crontab notes | CYBerATtacK </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="en">
@@ -177,7 +187,7 @@
     
   
 
-  <div class="container sidebar-position-left  ">
+  <div class="container sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -305,46 +315,170 @@
           <div id="content" class="content">
             
 
-  <div id="posts" class="posts-collapse">
-    <div class="collection-title">
-      <h2 >
-        Tail Call
-        <small>Tag</small>
-      </h2>
-    </div>
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/09/24/crontab-notes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
 
     
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                crontab notes
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2015-09-24T23:20:43+08:00">
+                2015-09-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
       
 
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+      
+        <p>为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。</p>
+<p>查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。</p>
+<p>我的监控命令用到了一个lsof，手动执行ok，但是crontab里面执行的时候是找不到的，需要设置PATH或者使用绝对路径。</p>
+<p>搜索“cron 环境变量 坑爹”有好多结果，我就不重复了。</p>
+<p>另外一个需要注意的是，crontab执行命令会默认将执行输出发用户邮箱，日积月累邮箱也会爆，所以命令一定记得 &gt;/dev/null 2&gt;&amp;1 重定向。</p>
 
-      <h2 class="post-title">
+      
+    </div>
+
+    <div>
+      
         
-            <a class="post-title-link" href="/2017/03/09/C-Tail-Call-Optimization/" itemprop="url">
-              
-                <span itemprop="name">C++ Tail Call Optimization</span>
-              
-            </a>
+
+      
+    </div>
+
+    <div>
+      
         
-      </h2>
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-03-09T23:39:56+08:00"
-              content="2017-03-09" >
-          03-09
-        </time>
-      </div>
+      
+    </div>
 
-    </header>
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/crontab/" rel="tag"># crontab</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/03/16/c-frind-get-private-value/" rel="next" title="c++ 通过 frind 来获取一个类的 private 成员变量">
+                <i class="fa fa-chevron-left"></i> c++ 通过 frind 来获取一个类的 private 成员变量
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/10/16/Security-Bsides-Delaware-2016/" rel="prev" title="Security Bsides Delaware 2016">
+                Security Bsides Delaware 2016 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
   </article>
 
 
-    
-  </div>
 
-  
+    <div class="post-spread">
+      
+        <!-- Go to www.addthis.com/dashboard to customize your tools -->
+<div class="addthis_inline_share_toolbox">
+  <script type = "text/javascript" src = "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-58c42267b9d94914" async = "async" ></script>
+</div>
+
+      
+    </div>
+  </div>
 
 
           </div>
@@ -352,6 +486,10 @@
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -387,7 +525,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-count">10</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -400,7 +538,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">24</span>
+                <span class="site-state-item-count">17</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>
@@ -575,6 +713,10 @@
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
 
   
 
