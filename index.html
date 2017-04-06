@@ -317,6 +317,142 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/04/05/re2-regex-speed-up/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2017/04/05/re2-regex-speed-up/" itemprop="url">
+                  加速正则表达式匹配过程
+                </a>
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-04-05T23:25:52+08:00">
+                2017-04-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>我们有个小系统，要load几十亿域名，支持字符串查询／正则模式匹配等等各种查找方式，以期找到满足模式的域名进行后续分析。</p>
+<p>普通的正则过程会比较慢，尤其正则越复杂，性能下降会很严重。当前load数据有50亿到100亿之间，一个复杂正则可能需要耗费几十分钟才能跑完。</p>
+<p>想到一个优化方法</p>
+<ul>
+<li>load数据的过程中，预先计算每个域名的组成，【0-9a-z】分别对应到一个bit，一个int64的整数足够</li>
+<li>查询时，把正则中固定字符串提取出来，算固定字符串的组成，正则匹配之前，先看要检查的域名的对应的组成int64的位与是否能cover正则表达式的组成int64</li>
+</ul>
+<p>域名的组成很少会把所有的字符都用到，对于特定的模式，能有overlap的域名只是一小部分，而上述的位与检查会非常迅速，所以可以大大提高匹配过程的效率。粗略估算，提升在5倍左右，对于正则表达式，如果能提供的固定字符串越多，匹配越快，如果完全不包含固定字符串，那就退化到和之前一样了。</p>
+<p>问题来了，python里面 re.compile(pattern, 128）会把一个pattern对应的解析后结果展示出来，re2没有这个接口，我们得自己添加。</p>
+<p>re2/re2.h 给 RE2 类添加<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="built_in">string</span> <span class="title">RegexpDump</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> Regexp()-&gt;Dump(); &#125;</div></pre></td></tr></table></figure></p>
+<p>Dump方法在re2/regex.h是有的，不过没有给出实现。在re2/testing/下有类似的dump实现，不过dump出来的字符串是一坨不好看，我们修改为如下</p>
+<p>re2/regexp.cc，添加到文件最后<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">char</span>* kOpcodeNames[] = &#123;</div><div class="line">  <span class="string">"bad "</span>,</div><div class="line">  <span class="string">"no "</span>,</div><div class="line">  <span class="string">"emp "</span>,</div><div class="line">  <span class="string">"CHR "</span>,</div><div class="line">  <span class="string">"STR "</span>,</div><div class="line">  <span class="string">"PATTERN "</span>,</div><div class="line">  <span class="string">"alt "</span>,</div><div class="line">  <span class="string">"0-ANY "</span>,</div><div class="line">  <span class="string">"1-ANY "</span>,</div><div class="line">  <span class="string">"0-1 "</span>,</div><div class="line">  <span class="string">"REPEAT "</span>,</div><div class="line">  <span class="string">"SUB"</span>,</div><div class="line">  <span class="string">"dot "</span>,</div><div class="line">  <span class="string">"byte "</span>,</div><div class="line">  <span class="string">"bol "</span>,</div><div class="line">  <span class="string">"eol "</span>,</div><div class="line">  <span class="string">"wb "</span>,   <span class="comment">// kRegexpWordBoundary</span></div><div class="line">  <span class="string">"nwb "</span>,  <span class="comment">// kRegexpNoWordBoundary</span></div><div class="line">  <span class="string">"BOT "</span>,</div><div class="line">  <span class="string">"EOT "</span>,</div><div class="line">  <span class="string">"IN "</span>,</div><div class="line">  <span class="string">"match "</span>,</div><div class="line">&#125;;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">DumpRegexpAppending</span><span class="params">(Regexp* re, <span class="built_in">string</span>* s, <span class="keyword">int</span> level)</span> </span>&#123;</div><div class="line">  <span class="keyword">if</span> (re-&gt;op() &lt; <span class="number">0</span> || re-&gt;op() &gt;= arraysize(kOpcodeNames)) &#123;</div><div class="line">    StringAppendF(s, <span class="string">"op%d"</span>, re-&gt;op());</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    <span class="keyword">switch</span> (re-&gt;op()) &#123;</div><div class="line">      <span class="keyword">default</span>:</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">      <span class="keyword">case</span> kRegexpStar:</div><div class="line">      <span class="keyword">case</span> kRegexpPlus:</div><div class="line">      <span class="keyword">case</span> kRegexpQuest:</div><div class="line">      <span class="keyword">case</span> kRegexpRepeat:</div><div class="line">        <span class="keyword">if</span> (re-&gt;parse_flags() &amp; Regexp::NonGreedy)</div><div class="line">          s-&gt;append(<span class="string">"n"</span>);</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span>(! s-&gt;empty())&#123;</div><div class="line">        s-&gt;append(<span class="string">"\n"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;level; ++i)&#123;</div><div class="line">        s-&gt;append(<span class="string">"  "</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    s-&gt;append(kOpcodeNames[re-&gt;op()]);</div><div class="line">    <span class="keyword">if</span> (re-&gt;op() == kRegexpLiteral &amp;&amp; (re-&gt;parse_flags() &amp; Regexp::FoldCase)) &#123;</div><div class="line">      Rune r = re-&gt;rune();</div><div class="line">      <span class="keyword">if</span> (<span class="string">'a'</span> &lt;= r &amp;&amp; r &lt;= <span class="string">'z'</span>)</div><div class="line">        s-&gt;append(<span class="string">"fold"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (re-&gt;op() == kRegexpLiteralString &amp;&amp; (re-&gt;parse_flags() &amp; Regexp::FoldCase)) &#123;</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nrunes(); i++) &#123;</div><div class="line">        Rune r = re-&gt;runes()[i];</div><div class="line">        <span class="keyword">if</span> (<span class="string">'a'</span> &lt;= r &amp;&amp; r &lt;= <span class="string">'z'</span>) &#123;</div><div class="line">          s-&gt;append(<span class="string">"fold"</span>);</div><div class="line">          <span class="keyword">break</span>;</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  s-&gt;append(<span class="string">"&#123;"</span>);</div><div class="line">  <span class="keyword">switch</span> (re-&gt;op()) &#123;</div><div class="line">    <span class="keyword">default</span>:</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpEndText:</div><div class="line">      <span class="keyword">if</span> (!(re-&gt;parse_flags() &amp; Regexp::WasDollar)) &#123;</div><div class="line">        s-&gt;append(<span class="string">"\\z"</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpLiteral: &#123;</div><div class="line">      Rune r = re-&gt;rune();</div><div class="line">      <span class="keyword">char</span> buf[UTFmax+<span class="number">1</span>];</div><div class="line">      buf[runetochar(buf, &amp;r)] = <span class="number">0</span>;</div><div class="line">      s-&gt;append(buf);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">case</span> kRegexpLiteralString:</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nrunes(); i++) &#123;</div><div class="line">        Rune r = re-&gt;runes()[i];</div><div class="line">        <span class="keyword">char</span> buf[UTFmax+<span class="number">1</span>];</div><div class="line">        buf[runetochar(buf, &amp;r)] = <span class="number">0</span>;</div><div class="line">        s-&gt;append(buf);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpConcat:</div><div class="line">    <span class="keyword">case</span> kRegexpAlternate:</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nsub(); i++)&#123;</div><div class="line">          DumpRegexpAppending(re-&gt;sub()[i], s, level+<span class="number">1</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpStar:</div><div class="line">    <span class="keyword">case</span> kRegexpPlus:</div><div class="line">    <span class="keyword">case</span> kRegexpQuest:</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpCapture:</div><div class="line">      <span class="keyword">if</span> (re-&gt;name()) &#123;</div><div class="line">        s-&gt;append(*re-&gt;name());</div><div class="line">        s-&gt;append(<span class="string">":"</span>);</div><div class="line">      &#125;</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpRepeat:</div><div class="line">      s-&gt;append(StringPrintf(<span class="string">"%d,%d "</span>, re-&gt;min(), re-&gt;max()));</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpCharClass: &#123;</div><div class="line">      <span class="built_in">string</span> sep;</div><div class="line">      <span class="keyword">for</span> (CharClass::iterator it = re-&gt;cc()-&gt;begin();</div><div class="line">           it != re-&gt;cc()-&gt;end(); ++it) &#123;</div><div class="line">        RuneRange rr = *it;</div><div class="line">        s-&gt;append(sep);</div><div class="line">        <span class="keyword">if</span> (rr.lo == rr.hi)</div><div class="line">          s-&gt;append(StringPrintf(<span class="string">"%#x"</span>, rr.lo));</div><div class="line">        <span class="keyword">else</span></div><div class="line">          s-&gt;append(StringPrintf(<span class="string">"%#x-%#x"</span>, rr.lo, rr.hi));</div><div class="line">        sep = <span class="string">" "</span>;</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">if</span>((*s)[s-&gt;size()<span class="number">-1</span>] == <span class="string">'&#125;'</span>)&#123;</div><div class="line">      s-&gt;append(<span class="string">"\n"</span>);</div><div class="line">      <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;level; ++i)&#123;</div><div class="line">          s-&gt;append(<span class="string">"  "</span>);</div><div class="line">      &#125;</div><div class="line">  &#125;</div><div class="line">  s-&gt;append(<span class="string">"&#125;"</span>);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="built_in">string</span> Regexp::Dump() &#123;</div><div class="line">  <span class="built_in">string</span> s;</div><div class="line">  DumpRegexpAppending(<span class="keyword">this</span>, &amp;s, <span class="number">0</span>);</div><div class="line">  <span class="keyword">return</span> s;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这样做个小程序</p>
+<p>main.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;argc; ++i)&#123;</div><div class="line">        <span class="keyword">auto</span> line = <span class="built_in">std</span>::<span class="built_in">string</span>(argv[i]);</div><div class="line">        re2::<span class="function">RE2 <span class="title">p</span><span class="params">(line)</span></span>;</div><div class="line">        <span class="keyword">if</span>(p.ok())&#123;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"&gt;&gt;&gt; "</span> &lt;&lt; line &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">string</span> pcc = p.RegexpDump();</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; pcc &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">        &#125;<span class="keyword">else</span>&#123;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"&gt;&gt;&gt; "</span> &lt;&lt; line &lt;&lt; <span class="string">" Parse error."</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">[xuyang@dev:/secret/path/]$ ./repattern.exe <span class="string">'^hello[0-9]&#123;1,3&#125;\.[abc_.-]&#123;5,6&#125;world$'</span></div><div class="line">&gt;&gt;&gt; ^hello[0-9]&#123;1,3&#125;\.[abc_.-]&#123;5,6&#125;world$</div><div class="line">PATTERN &#123;</div><div class="line">  BOT &#123;&#125;</div><div class="line">  STR &#123;hello&#125;</div><div class="line">  REPEAT &#123;1,3</div><div class="line">    IN &#123;0x30-0x39&#125;</div><div class="line">  &#125;</div><div class="line">  CHR &#123;.&#125;</div><div class="line">  REPEAT &#123;5,6</div><div class="line">    IN &#123;0x2d-0x2e 0x5f 0x61-0x63&#125;</div><div class="line">  &#125;</div><div class="line">  STR &#123;world&#125;</div><div class="line">  EOT &#123;&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上述STR／CHR的部分就是我们关心的“一个正则中固定字符串”的部分，可以用于我们的快速预计算</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/03/25/rsd-attack/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1639,198 +1775,13 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/01/01/markdown+example/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="YANG XU">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/touxiang.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="CYBerATtacK">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2015/01/01/markdown+example/" itemprop="url">
-                  hexo+next主题的markdown示范样例备忘
-                </a>
-              
-            
-          </h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2015-01-01T00:00:00+08:00">
-                2015-01-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-          
-          
-            <div class="post-gallery-row">
-              <a class="post-gallery-img fancybox"
-                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj0umqa07000fgxrzhfw55lz0"
-                 itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
-                <img src="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" itemprop="contentUrl"/>
-              </a>
-            
-          
-            
-              <a class="post-gallery-img fancybox"
-                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj0umqa07000fgxrzhfw55lz0"
-                 itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
-                <img src="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" itemprop="contentUrl"/>
-              </a>
-            
-          
-            
-              <a class="post-gallery-img fancybox"
-                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj0umqa07000fgxrzhfw55lz0"
-                 itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
-                <img src="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" itemprop="contentUrl"/>
-              </a>
-            </div>
-          
-
-          
-          
-        </div>
-      
-
-      
-        
-          
-            <figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">link:</div><div class="line"> - http://cybatk.com/   &lt;!-- 修改title的链接 --&gt;</div><div class="line"></div><div class="line">photos:</div><div class="line"> - http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg</div><div class="line"> - http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg</div><div class="line"><span class="section"> - http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg</span></div><div class="line">---</div></pre></td></tr></table></figure>
-<blockquote class="blockquote-center"><p>这篇blog没有干货，所以一上来就得有点趣味</p>
-</blockquote>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&#123;% centerquote %&#125;</div><div class="line">这篇blog没有干货，所以一上来就得有点趣味</div><div class="line">&#123;% endcenterquote %&#125;</div></pre></td></tr></table></figure>
-<span itemprop="image" itemscope="" itemtype="http://schema.org/ImageObject"><img itemprop="url image" src="https://umbrella.cisco.com/blog/wp-content/themes/umbrella-blog/img/default/ArticleImage_11_banner.jpg" class="full-image" alt="alttttttttt" title="titttttttttttle"><meta itemprop="width" content="auto"><meta itemprop="height" content="auto"></span>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&#123;% fullimage https://umbrella.cisco.com/blog/wp-content/themes/umbrella-blog/img/default/ArticleImage<span class="emphasis">_11_</span>banner.jpg, alttttttttt, titttttttttttle %&#125;</div></pre></td></tr></table></figure>
-<blockquote><p>!!!: hexo tag doc </p>
-<footer><strong>@xuy1202</strong><cite><a href="https://hexo.io/docs/tag-plugins.html" target="_blank" rel="external">hexo.io/docs/tag-plugins.html</a></cite></footer></blockquote>
-<hr>
-<blockquote><p>Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.</p>
-<footer><strong>David Levithan</strong><cite>Wide Awake</cite></footer></blockquote>
-<hr>
-<blockquote><p>Every interaction is both precious and an opportunity to delight.</p>
-<footer><strong>Seth Godin</strong><cite><a href="http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html" target="_blank" rel="external">Welcome to Island Marketing</a></cite></footer></blockquote>
-<hr>
-<blockquote><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque hendrerit lacus ut purus iaculis feugiat. Sed nec tempor elit, quis aliquam neque. Curabitur sed diam eget dolor fermentum semper at eu lorem.</p>
-</blockquote>
-<h1 id="Head1"><a href="#Head1" class="headerlink" title="Head1"></a>Head1</h1><h2 id="This-is-an-H2"><a href="#This-is-an-H2" class="headerlink" title="This is an H2"></a>This is an H2</h2><h1 id="Head2"><a href="#Head2" class="headerlink" title="Head2"></a>Head2</h1><h2 id="sub-title"><a href="#sub-title" class="headerlink" title="sub title"></a>sub title</h2><h2 id="sub-title-1"><a href="#sub-title-1" class="headerlink" title="sub title"></a>sub title</h2><blockquote>
-<p>This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,<br>consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.<br>Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.</p>
-</blockquote>
-<div class="note default"><p>default </p>
-</div>
-<div class="note primary"><p>primary </p>
-</div>
-<div class="note success"><p>success </p>
-</div>
-<div class="note info"><p>info    </p>
-</div>
-<div class="note warning"><p>warning </p>
-</div>
-<div class="note danger"><p>danger  </p>
-</div>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&#123;% note default %&#125; default &#123;% endnote %&#125;</div><div class="line">&#123;% note primary %&#125; primary &#123;% endnote %&#125;</div><div class="line">&#123;% note success %&#125; success &#123;% endnote %&#125;</div><div class="line">&#123;% note info    %&#125; info    &#123;% endnote %&#125;</div><div class="line">&#123;% note warning %&#125; warning &#123;% endnote %&#125;</div><div class="line">&#123;% note danger  %&#125; danger  &#123;% endnote %&#125;</div></pre></td></tr></table></figure>
-<!--
-![](/images/touxiang.jpg)
-<span itemprop="image" itemscope itemtype="http://schema.org/ImageObject"><img itemprop="url image" src="/images/touxiang.jpg" class="full-image" alt="alt" title="title" /><meta itemprop="width" content="auto"><meta itemprop="height" content="auto"></span>
-<p>–&gt;</p>
--->
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+  </nav>
+
 
 
           </div>
@@ -1873,7 +1824,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-count">11</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -1886,7 +1837,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">17</span>
+                <span class="site-state-item-count">20</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>

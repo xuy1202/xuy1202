@@ -1,0 +1,922 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=swald:300,300italic,400,400italic,700,700italic|Roboto+Condens:300,300italic,400,400italic,700,700italic|Source+Code+Pro:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="cpp,正则,re2,性能," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="CYBerATtacK" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="我们有个小系统，要load几十亿域名，支持字符串查询／正则模式匹配等等各种查找方式，以期找到满足模式的域名进行后续分析。
+普通的正则过程会比较慢，尤其正则越复杂，性能下降会很严重。当前load数据有50亿到100亿之间，一个复杂正则可能需要耗费几十分钟才能跑完。
+想到一个优化方法
+
+load数据的过程中，预先计算每个域名的组成，【0-9a-z】分别对应到一个bit，一个int64的整数足够
+查询时">
+<meta property="og:type" content="article">
+<meta property="og:title" content="加速正则表达式匹配过程">
+<meta property="og:url" content="http://cybatk.com/2017/04/05/re2-regex-speed-up/index.html">
+<meta property="og:site_name" content="CYBerATtacK">
+<meta property="og:description" content="我们有个小系统，要load几十亿域名，支持字符串查询／正则模式匹配等等各种查找方式，以期找到满足模式的域名进行后续分析。
+普通的正则过程会比较慢，尤其正则越复杂，性能下降会很严重。当前load数据有50亿到100亿之间，一个复杂正则可能需要耗费几十分钟才能跑完。
+想到一个优化方法
+
+load数据的过程中，预先计算每个域名的组成，【0-9a-z】分别对应到一个bit，一个int64的整数足够
+查询时">
+<meta property="og:updated_time" content="2017-04-06T05:54:53.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="加速正则表达式匹配过程">
+<meta name="twitter:description" content="我们有个小系统，要load几十亿域名，支持字符串查询／正则模式匹配等等各种查找方式，以期找到满足模式的域名进行后续分析。
+普通的正则过程会比较慢，尤其正则越复杂，性能下降会很严重。当前load数据有50亿到100亿之间，一个复杂正则可能需要耗费几十分钟才能跑完。
+想到一个优化方法
+
+load数据的过程中，预先计算每个域名的组成，【0-9a-z】分别对应到一个bit，一个int64的整数足够
+查询时">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 'undefined',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://cybatk.com/2017/04/05/re2-regex-speed-up/"/>
+
+
+
+
+
+  <title> 加速正则表达式匹配过程 | CYBerATtacK </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-93514438-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">CYBerATtacK</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">cyber security related things</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocapitalize="off" autocomplete="off" autocorrect="off"
+             placeholder="Searching..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/04/05/re2-regex-speed-up/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                加速正则表达式匹配过程
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-04-05T23:25:52+08:00">
+                2017-04-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>我们有个小系统，要load几十亿域名，支持字符串查询／正则模式匹配等等各种查找方式，以期找到满足模式的域名进行后续分析。</p>
+<p>普通的正则过程会比较慢，尤其正则越复杂，性能下降会很严重。当前load数据有50亿到100亿之间，一个复杂正则可能需要耗费几十分钟才能跑完。</p>
+<p>想到一个优化方法</p>
+<ul>
+<li>load数据的过程中，预先计算每个域名的组成，【0-9a-z】分别对应到一个bit，一个int64的整数足够</li>
+<li>查询时，把正则中固定字符串提取出来，算固定字符串的组成，正则匹配之前，先看要检查的域名的对应的组成int64的位与是否能cover正则表达式的组成int64</li>
+</ul>
+<p>域名的组成很少会把所有的字符都用到，对于特定的模式，能有overlap的域名只是一小部分，而上述的位与检查会非常迅速，所以可以大大提高匹配过程的效率。粗略估算，提升在5倍左右，对于正则表达式，如果能提供的固定字符串越多，匹配越快，如果完全不包含固定字符串，那就退化到和之前一样了。</p>
+<p>问题来了，python里面 re.compile(pattern, 128）会把一个pattern对应的解析后结果展示出来，re2没有这个接口，我们得自己添加。</p>
+<p>re2/re2.h 给 RE2 类添加<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="built_in">string</span> <span class="title">RegexpDump</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> Regexp()-&gt;Dump(); &#125;</div></pre></td></tr></table></figure></p>
+<p>Dump方法在re2/regex.h是有的，不过没有给出实现。在re2/testing/下有类似的dump实现，不过dump出来的字符串是一坨不好看，我们修改为如下</p>
+<p>re2/regexp.cc，添加到文件最后<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">char</span>* kOpcodeNames[] = &#123;</div><div class="line">  <span class="string">"bad "</span>,</div><div class="line">  <span class="string">"no "</span>,</div><div class="line">  <span class="string">"emp "</span>,</div><div class="line">  <span class="string">"CHR "</span>,</div><div class="line">  <span class="string">"STR "</span>,</div><div class="line">  <span class="string">"PATTERN "</span>,</div><div class="line">  <span class="string">"alt "</span>,</div><div class="line">  <span class="string">"0-ANY "</span>,</div><div class="line">  <span class="string">"1-ANY "</span>,</div><div class="line">  <span class="string">"0-1 "</span>,</div><div class="line">  <span class="string">"REPEAT "</span>,</div><div class="line">  <span class="string">"SUB"</span>,</div><div class="line">  <span class="string">"dot "</span>,</div><div class="line">  <span class="string">"byte "</span>,</div><div class="line">  <span class="string">"bol "</span>,</div><div class="line">  <span class="string">"eol "</span>,</div><div class="line">  <span class="string">"wb "</span>,   <span class="comment">// kRegexpWordBoundary</span></div><div class="line">  <span class="string">"nwb "</span>,  <span class="comment">// kRegexpNoWordBoundary</span></div><div class="line">  <span class="string">"BOT "</span>,</div><div class="line">  <span class="string">"EOT "</span>,</div><div class="line">  <span class="string">"IN "</span>,</div><div class="line">  <span class="string">"match "</span>,</div><div class="line">&#125;;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">DumpRegexpAppending</span><span class="params">(Regexp* re, <span class="built_in">string</span>* s, <span class="keyword">int</span> level)</span> </span>&#123;</div><div class="line">  <span class="keyword">if</span> (re-&gt;op() &lt; <span class="number">0</span> || re-&gt;op() &gt;= arraysize(kOpcodeNames)) &#123;</div><div class="line">    StringAppendF(s, <span class="string">"op%d"</span>, re-&gt;op());</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    <span class="keyword">switch</span> (re-&gt;op()) &#123;</div><div class="line">      <span class="keyword">default</span>:</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">      <span class="keyword">case</span> kRegexpStar:</div><div class="line">      <span class="keyword">case</span> kRegexpPlus:</div><div class="line">      <span class="keyword">case</span> kRegexpQuest:</div><div class="line">      <span class="keyword">case</span> kRegexpRepeat:</div><div class="line">        <span class="keyword">if</span> (re-&gt;parse_flags() &amp; Regexp::NonGreedy)</div><div class="line">          s-&gt;append(<span class="string">"n"</span>);</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span>(! s-&gt;empty())&#123;</div><div class="line">        s-&gt;append(<span class="string">"\n"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;level; ++i)&#123;</div><div class="line">        s-&gt;append(<span class="string">"  "</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    s-&gt;append(kOpcodeNames[re-&gt;op()]);</div><div class="line">    <span class="keyword">if</span> (re-&gt;op() == kRegexpLiteral &amp;&amp; (re-&gt;parse_flags() &amp; Regexp::FoldCase)) &#123;</div><div class="line">      Rune r = re-&gt;rune();</div><div class="line">      <span class="keyword">if</span> (<span class="string">'a'</span> &lt;= r &amp;&amp; r &lt;= <span class="string">'z'</span>)</div><div class="line">        s-&gt;append(<span class="string">"fold"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (re-&gt;op() == kRegexpLiteralString &amp;&amp; (re-&gt;parse_flags() &amp; Regexp::FoldCase)) &#123;</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nrunes(); i++) &#123;</div><div class="line">        Rune r = re-&gt;runes()[i];</div><div class="line">        <span class="keyword">if</span> (<span class="string">'a'</span> &lt;= r &amp;&amp; r &lt;= <span class="string">'z'</span>) &#123;</div><div class="line">          s-&gt;append(<span class="string">"fold"</span>);</div><div class="line">          <span class="keyword">break</span>;</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  s-&gt;append(<span class="string">"&#123;"</span>);</div><div class="line">  <span class="keyword">switch</span> (re-&gt;op()) &#123;</div><div class="line">    <span class="keyword">default</span>:</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpEndText:</div><div class="line">      <span class="keyword">if</span> (!(re-&gt;parse_flags() &amp; Regexp::WasDollar)) &#123;</div><div class="line">        s-&gt;append(<span class="string">"\\z"</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpLiteral: &#123;</div><div class="line">      Rune r = re-&gt;rune();</div><div class="line">      <span class="keyword">char</span> buf[UTFmax+<span class="number">1</span>];</div><div class="line">      buf[runetochar(buf, &amp;r)] = <span class="number">0</span>;</div><div class="line">      s-&gt;append(buf);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">case</span> kRegexpLiteralString:</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nrunes(); i++) &#123;</div><div class="line">        Rune r = re-&gt;runes()[i];</div><div class="line">        <span class="keyword">char</span> buf[UTFmax+<span class="number">1</span>];</div><div class="line">        buf[runetochar(buf, &amp;r)] = <span class="number">0</span>;</div><div class="line">        s-&gt;append(buf);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpConcat:</div><div class="line">    <span class="keyword">case</span> kRegexpAlternate:</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nsub(); i++)&#123;</div><div class="line">          DumpRegexpAppending(re-&gt;sub()[i], s, level+<span class="number">1</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpStar:</div><div class="line">    <span class="keyword">case</span> kRegexpPlus:</div><div class="line">    <span class="keyword">case</span> kRegexpQuest:</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpCapture:</div><div class="line">      <span class="keyword">if</span> (re-&gt;name()) &#123;</div><div class="line">        s-&gt;append(*re-&gt;name());</div><div class="line">        s-&gt;append(<span class="string">":"</span>);</div><div class="line">      &#125;</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpRepeat:</div><div class="line">      s-&gt;append(StringPrintf(<span class="string">"%d,%d "</span>, re-&gt;min(), re-&gt;max()));</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpCharClass: &#123;</div><div class="line">      <span class="built_in">string</span> sep;</div><div class="line">      <span class="keyword">for</span> (CharClass::iterator it = re-&gt;cc()-&gt;begin();</div><div class="line">           it != re-&gt;cc()-&gt;end(); ++it) &#123;</div><div class="line">        RuneRange rr = *it;</div><div class="line">        s-&gt;append(sep);</div><div class="line">        <span class="keyword">if</span> (rr.lo == rr.hi)</div><div class="line">          s-&gt;append(StringPrintf(<span class="string">"%#x"</span>, rr.lo));</div><div class="line">        <span class="keyword">else</span></div><div class="line">          s-&gt;append(StringPrintf(<span class="string">"%#x-%#x"</span>, rr.lo, rr.hi));</div><div class="line">        sep = <span class="string">" "</span>;</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">if</span>((*s)[s-&gt;size()<span class="number">-1</span>] == <span class="string">'&#125;'</span>)&#123;</div><div class="line">      s-&gt;append(<span class="string">"\n"</span>);</div><div class="line">      <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;level; ++i)&#123;</div><div class="line">          s-&gt;append(<span class="string">"  "</span>);</div><div class="line">      &#125;</div><div class="line">  &#125;</div><div class="line">  s-&gt;append(<span class="string">"&#125;"</span>);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="built_in">string</span> Regexp::Dump() &#123;</div><div class="line">  <span class="built_in">string</span> s;</div><div class="line">  DumpRegexpAppending(<span class="keyword">this</span>, &amp;s, <span class="number">0</span>);</div><div class="line">  <span class="keyword">return</span> s;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这样做个小程序</p>
+<p>main.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;argc; ++i)&#123;</div><div class="line">        <span class="keyword">auto</span> line = <span class="built_in">std</span>::<span class="built_in">string</span>(argv[i]);</div><div class="line">        re2::<span class="function">RE2 <span class="title">p</span><span class="params">(line)</span></span>;</div><div class="line">        <span class="keyword">if</span>(p.ok())&#123;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"&gt;&gt;&gt; "</span> &lt;&lt; line &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">string</span> pcc = p.RegexpDump();</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; pcc &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">        &#125;<span class="keyword">else</span>&#123;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"&gt;&gt;&gt; "</span> &lt;&lt; line &lt;&lt; <span class="string">" Parse error."</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">[xuyang@dev:/secret/path/]$ ./repattern.exe <span class="string">'^hello[0-9]&#123;1,3&#125;\.[abc_.-]&#123;5,6&#125;world$'</span></div><div class="line">&gt;&gt;&gt; ^hello[0-9]&#123;1,3&#125;\.[abc_.-]&#123;5,6&#125;world$</div><div class="line">PATTERN &#123;</div><div class="line">  BOT &#123;&#125;</div><div class="line">  STR &#123;hello&#125;</div><div class="line">  REPEAT &#123;1,3</div><div class="line">    IN &#123;0x30-0x39&#125;</div><div class="line">  &#125;</div><div class="line">  CHR &#123;.&#125;</div><div class="line">  REPEAT &#123;5,6</div><div class="line">    IN &#123;0x2d-0x2e 0x5f 0x61-0x63&#125;</div><div class="line">  &#125;</div><div class="line">  STR &#123;world&#125;</div><div class="line">  EOT &#123;&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上述STR／CHR的部分就是我们关心的“一个正则中固定字符串”的部分，可以用于我们的快速预计算</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/cpp/" rel="tag"># cpp</a>
+          
+            <a href="/tags/正则/" rel="tag"># 正则</a>
+          
+            <a href="/tags/re2/" rel="tag"># re2</a>
+          
+            <a href="/tags/性能/" rel="tag"># 性能</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/03/25/rsd-attack/" rel="next" title="RSD 随机子域名攻击">
+                <i class="fa fa-chevron-left"></i> RSD 随机子域名攻击
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- Go to www.addthis.com/dashboard to customize your tools -->
+<div class="addthis_inline_share_toolbox">
+  <script type = "text/javascript" src = "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-58c42267b9d94914" async = "async" ></script>
+</div>
+
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview sidebar-panel sidebar-panel-active">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/touxiang.jpg"
+               alt="YANG XU" />
+          <p class="site-author-name" itemprop="name">YANG XU</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">11</span>
+                <span class="site-state-item-name">posts</span>
+              </a>
+            </div>
+          
+
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-name">tags</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://www.linkedin.com/in/xuamao/" target="_blank" title="Linkedin">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  Linkedin
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/xuy1202" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://twitter.com/xuy1202" target="_blank" title="Twitter">
+                  
+                    <i class="fa fa-fw fa-twitter"></i>
+                  
+                  Twitter
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/xuy1202" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy;  2015 - God knows - 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">YANG XU</span>
+</div>
+
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="https://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length == 0) {
+      search_path = "search.xml";
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.popup').toggle();
+    }
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+      $.ajax({
+        url: path,
+        dataType: "xml",
+        async: true,
+        success: function( xmlResponse ) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = $( "entry", xmlResponse ).map(function() {
+            return {
+              title: $( "title", this ).text(),
+              content: $("content",this).text(),
+              url: $( "url" , this).text()
+            };
+          }).get();
+          var $input = document.getElementById(search_id);
+          var $resultContent = document.getElementById(content_id);
+          $input.addEventListener('input', function(){
+            var matchcounts = 0;
+            var str='<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length > 1) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var content_index = [];
+                var data_title = data.title.trim().toLowerCase();
+                var data_content = data.content.trim().replace(/<[^>]+>/g,"").toLowerCase();
+                var data_url = decodeURIComponent(data.url);
+                var index_title = -1;
+                var index_content = -1;
+                var first_occur = -1;
+                // only match artiles with not empty titles and contents
+                if(data_title != '') {
+                  keywords.forEach(function(keyword, i) {
+                    index_title = data_title.indexOf(keyword);
+                    index_content = data_content.indexOf(keyword);
+                    if( index_title >= 0 || index_content >= 0 ){
+                      isMatch = true;
+                      if (i == 0) {
+                        first_occur = index_content;
+                      }
+                    }
+
+                  });
+                }
+                // show search results
+                if (isMatch) {
+                  matchcounts += 1;
+                  str += "<li><a href='"+ data_url +"' class='search-result-title'>"+ data_title +"</a>";
+                  var content = data.content.trim().replace(/<[^>]+>/g,"");
+                  if (first_occur >= 0) {
+                    // cut out 100 characters
+                    var start = first_occur - 20;
+                    var end = first_occur + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if(start == 0){
+                      end = 50;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    var match_content = content.substring(start, end);
+                    // highlight all keywords
+                    keywords.forEach(function(keyword){
+                      var regS = new RegExp(keyword, "gi");
+                      match_content = match_content.replace(regS, "<b class=\"search-keyword\">"+keyword+"</b>");
+                    });
+
+                    str += "<p class=\"search-result\">" + match_content +"...</p>"
+                  }
+                  str += "</li>";
+                }
+              })};
+            str += "</ul>";
+            if (matchcounts == 0) { str = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>' }
+            if (keywords == "") { str = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>' }
+            $resultContent.innerHTML = str;
+          });
+          proceedsearch();
+        }
+      });}
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched == false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(function(e){
+      $('.popup').hide();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    });
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
