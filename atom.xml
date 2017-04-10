@@ -377,9 +377,9 @@
     
       <category term="DDoS" scheme="http://cybatk.com/tags/DDoS/"/>
     
-      <category term="network security" scheme="http://cybatk.com/tags/network-security/"/>
-    
       <category term="Scan" scheme="http://cybatk.com/tags/Scan/"/>
+    
+      <category term="network security" scheme="http://cybatk.com/tags/network-security/"/>
     
       <category term="security visibility" scheme="http://cybatk.com/tags/security-visibility/"/>
     
@@ -420,11 +420,11 @@
     </summary>
     
     
+      <category term="network security" scheme="http://cybatk.com/tags/network-security/"/>
+    
       <category term="big data" scheme="http://cybatk.com/tags/big-data/"/>
     
       <category term="machine learning" scheme="http://cybatk.com/tags/machine-learning/"/>
-    
-      <category term="network security" scheme="http://cybatk.com/tags/network-security/"/>
     
   </entry>
   
