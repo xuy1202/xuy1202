@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://cybatk.com/about/resume.zh.html</loc>
+    
+    <lastmod>2017-04-11T10:55:51.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://cybatk.com/about/index.html</loc>
     
     <lastmod>2017-04-10T06:14:40.000Z</lastmod>
@@ -58,21 +65,14 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/notes/index.html</loc>
-    
-    <lastmod>2017-03-27T02:30:51.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://cybatk.com/about/resume.zh.html</loc>
-    
-    <lastmod>2017-03-27T02:30:51.000Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://cybatk.com/2015/03/16/c-frind-get-private-value/</loc>
+    
+    <lastmod>2017-03-27T02:30:51.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://cybatk.com/2015/09/24/crontab-notes/</loc>
     
     <lastmod>2017-03-27T02:30:51.000Z</lastmod>
     
@@ -86,7 +86,7 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2015/09/24/crontab-notes/</loc>
+    <loc>http://cybatk.com/notes/index.html</loc>
     
     <lastmod>2017-03-27T02:30:51.000Z</lastmod>
     
