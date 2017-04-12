@@ -409,7 +409,7 @@
 </ul>
 <p>域名的组成很少会把所有的字符都用到，对于特定的模式，能有overlap的域名只是一小部分，而上述的位与检查会非常迅速，所以可以大大提高匹配过程的效率。粗略估算，提升在5倍左右，对于正则表达式，如果能提供的固定字符串越多，匹配越快，如果完全不包含固定字符串，那就退化到和之前一样了。</p>
 <p>问题来了，python里面 re.compile(pattern, 128）会把一个pattern对应的解析后结果展示出来，re2没有这个接口，我们得自己添加。</p>
-<p>re2/re2.h 给 RE2 类添加<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="built_in">string</span> <span class="title">RegexpDump</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> Regexp()-&gt;Dump(); &#125;</div></pre></td></tr></table></figure></p>
+<p>re2/re2.h 给 RE2 类添加<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"> ... ...</div><div class="line">+<span class="keyword">class</span> Regexp &#123;</div><div class="line">+    <span class="keyword">public</span>:</div><div class="line">+        <span class="function"><span class="built_in">string</span> <span class="title">Dump</span><span class="params">()</span></span>;</div><div class="line">+&#125;;</div><div class="line"></div><div class="line"><span class="keyword">class</span> RE2&#123;</div><div class="line">    ... ...</div><div class="line">+    <span class="function"><span class="built_in">string</span> <span class="title">RegexpDump</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> Regexp()-&gt;Dump(); &#125;</div><div class="line">    ... ...</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
 <p>Dump方法在re2/regex.h是有的，不过没有给出实现。在re2/testing/下有类似的dump实现，不过dump出来的字符串是一坨不好看，我们修改为如下</p>
 <p>re2/regexp.cc，添加到文件最后<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">char</span>* kOpcodeNames[] = &#123;</div><div class="line">  <span class="string">"bad "</span>,</div><div class="line">  <span class="string">"no "</span>,</div><div class="line">  <span class="string">"emp "</span>,</div><div class="line">  <span class="string">"CHR "</span>,</div><div class="line">  <span class="string">"STR "</span>,</div><div class="line">  <span class="string">"PATTERN "</span>,</div><div class="line">  <span class="string">"alt "</span>,</div><div class="line">  <span class="string">"0-ANY "</span>,</div><div class="line">  <span class="string">"1-ANY "</span>,</div><div class="line">  <span class="string">"0-1 "</span>,</div><div class="line">  <span class="string">"REPEAT "</span>,</div><div class="line">  <span class="string">"SUB"</span>,</div><div class="line">  <span class="string">"dot "</span>,</div><div class="line">  <span class="string">"byte "</span>,</div><div class="line">  <span class="string">"bol "</span>,</div><div class="line">  <span class="string">"eol "</span>,</div><div class="line">  <span class="string">"wb "</span>,   <span class="comment">// kRegexpWordBoundary</span></div><div class="line">  <span class="string">"nwb "</span>,  <span class="comment">// kRegexpNoWordBoundary</span></div><div class="line">  <span class="string">"BOT "</span>,</div><div class="line">  <span class="string">"EOT "</span>,</div><div class="line">  <span class="string">"IN "</span>,</div><div class="line">  <span class="string">"match "</span>,</div><div class="line">&#125;;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">DumpRegexpAppending</span><span class="params">(Regexp* re, <span class="built_in">string</span>* s, <span class="keyword">int</span> level)</span> </span>&#123;</div><div class="line">  <span class="keyword">if</span> (re-&gt;op() &lt; <span class="number">0</span> || re-&gt;op() &gt;= arraysize(kOpcodeNames)) &#123;</div><div class="line">    StringAppendF(s, <span class="string">"op%d"</span>, re-&gt;op());</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    <span class="keyword">switch</span> (re-&gt;op()) &#123;</div><div class="line">      <span class="keyword">default</span>:</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">      <span class="keyword">case</span> kRegexpStar:</div><div class="line">      <span class="keyword">case</span> kRegexpPlus:</div><div class="line">      <span class="keyword">case</span> kRegexpQuest:</div><div class="line">      <span class="keyword">case</span> kRegexpRepeat:</div><div class="line">        <span class="keyword">if</span> (re-&gt;parse_flags() &amp; Regexp::NonGreedy)</div><div class="line">          s-&gt;append(<span class="string">"n"</span>);</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span>(! s-&gt;empty())&#123;</div><div class="line">        s-&gt;append(<span class="string">"\n"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;level; ++i)&#123;</div><div class="line">        s-&gt;append(<span class="string">"  "</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    s-&gt;append(kOpcodeNames[re-&gt;op()]);</div><div class="line">    <span class="keyword">if</span> (re-&gt;op() == kRegexpLiteral &amp;&amp; (re-&gt;parse_flags() &amp; Regexp::FoldCase)) &#123;</div><div class="line">      Rune r = re-&gt;rune();</div><div class="line">      <span class="keyword">if</span> (<span class="string">'a'</span> &lt;= r &amp;&amp; r &lt;= <span class="string">'z'</span>)</div><div class="line">        s-&gt;append(<span class="string">"fold"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (re-&gt;op() == kRegexpLiteralString &amp;&amp; (re-&gt;parse_flags() &amp; Regexp::FoldCase)) &#123;</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nrunes(); i++) &#123;</div><div class="line">        Rune r = re-&gt;runes()[i];</div><div class="line">        <span class="keyword">if</span> (<span class="string">'a'</span> &lt;= r &amp;&amp; r &lt;= <span class="string">'z'</span>) &#123;</div><div class="line">          s-&gt;append(<span class="string">"fold"</span>);</div><div class="line">          <span class="keyword">break</span>;</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  s-&gt;append(<span class="string">"&#123;"</span>);</div><div class="line">  <span class="keyword">switch</span> (re-&gt;op()) &#123;</div><div class="line">    <span class="keyword">default</span>:</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpEndText:</div><div class="line">      <span class="keyword">if</span> (!(re-&gt;parse_flags() &amp; Regexp::WasDollar)) &#123;</div><div class="line">        s-&gt;append(<span class="string">"\\z"</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpLiteral: &#123;</div><div class="line">      Rune r = re-&gt;rune();</div><div class="line">      <span class="keyword">char</span> buf[UTFmax+<span class="number">1</span>];</div><div class="line">      buf[runetochar(buf, &amp;r)] = <span class="number">0</span>;</div><div class="line">      s-&gt;append(buf);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">case</span> kRegexpLiteralString:</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nrunes(); i++) &#123;</div><div class="line">        Rune r = re-&gt;runes()[i];</div><div class="line">        <span class="keyword">char</span> buf[UTFmax+<span class="number">1</span>];</div><div class="line">        buf[runetochar(buf, &amp;r)] = <span class="number">0</span>;</div><div class="line">        s-&gt;append(buf);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpConcat:</div><div class="line">    <span class="keyword">case</span> kRegexpAlternate:</div><div class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; re-&gt;nsub(); i++)&#123;</div><div class="line">          DumpRegexpAppending(re-&gt;sub()[i], s, level+<span class="number">1</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpStar:</div><div class="line">    <span class="keyword">case</span> kRegexpPlus:</div><div class="line">    <span class="keyword">case</span> kRegexpQuest:</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpCapture:</div><div class="line">      <span class="keyword">if</span> (re-&gt;name()) &#123;</div><div class="line">        s-&gt;append(*re-&gt;name());</div><div class="line">        s-&gt;append(<span class="string">":"</span>);</div><div class="line">      &#125;</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpRepeat:</div><div class="line">      s-&gt;append(StringPrintf(<span class="string">"%d,%d "</span>, re-&gt;min(), re-&gt;max()));</div><div class="line">      DumpRegexpAppending(re-&gt;sub()[<span class="number">0</span>], s, level+<span class="number">1</span>);</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    <span class="keyword">case</span> kRegexpCharClass: &#123;</div><div class="line">      <span class="built_in">string</span> sep;</div><div class="line">      <span class="keyword">for</span> (CharClass::iterator it = re-&gt;cc()-&gt;begin();</div><div class="line">           it != re-&gt;cc()-&gt;end(); ++it) &#123;</div><div class="line">        RuneRange rr = *it;</div><div class="line">        s-&gt;append(sep);</div><div class="line">        <span class="keyword">if</span> (rr.lo == rr.hi)</div><div class="line">          s-&gt;append(StringPrintf(<span class="string">"%#x"</span>, rr.lo));</div><div class="line">        <span class="keyword">else</span></div><div class="line">          s-&gt;append(StringPrintf(<span class="string">"%#x-%#x"</span>, rr.lo, rr.hi));</div><div class="line">        sep = <span class="string">" "</span>;</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">if</span>((*s)[s-&gt;size()<span class="number">-1</span>] == <span class="string">'&#125;'</span>)&#123;</div><div class="line">      s-&gt;append(<span class="string">"\n"</span>);</div><div class="line">      <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;level; ++i)&#123;</div><div class="line">          s-&gt;append(<span class="string">"  "</span>);</div><div class="line">      &#125;</div><div class="line">  &#125;</div><div class="line">  s-&gt;append(<span class="string">"&#125;"</span>);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="built_in">string</span> Regexp::Dump() &#123;</div><div class="line">  <span class="built_in">string</span> s;</div><div class="line">  DumpRegexpAppending(<span class="keyword">this</span>, &amp;s, <span class="number">0</span>);</div><div class="line">  <span class="keyword">return</span> s;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <p>这样做个小程序</p>
@@ -1360,6 +1360,217 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2016/05/12/ddos-types/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2016/05/12/ddos-types/" itemprop="url">
+                  DDoS Types
+                </a>
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-05-12T18:27:12+08:00">
+                2016-05-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>网上DDoS攻击类型的说明七零八落，没有一个成体系和较合理的分类体系。DDoS攻击，目的都是毁掉“可用性”，那第一考量维度应该就是毁掉的“可用性资源”是什么。其次，攻击发起的位置，也就是协议层次，很重要，这决定了，我们在什么样的位置可以更好的发现对应类型的攻击。任何一个DDoS攻击，一定要能说明白这两个问题，才能说“看到了”这个攻击。</p>
+<p>因此，做个表格，从如下两个维度来给常见的DDoS一个合适的位置</p>
+<ul>
+<li>协议层次: 各种不同网络层级的不同协议</li>
+<li>耗费的资源: 带宽，CPU，还是连接，甚或是特定应用的特定弱点？</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>LayerProto \ Resources</th>
+<th style="text-align:center">Bindwidth</th>
+<th style="text-align:right">CPU</th>
+<th style="text-align:right">Session/Connection</th>
+<th style="text-align:right">Application Specified Weakness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GRE</td>
+<td style="text-align:center">GRE_Flood</td>
+<td style="text-align:right">GRE_Flood</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td>ICMP</td>
+<td style="text-align:center">Ping_Flood; Smurf_Attack</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right">Ping_of_Death</td>
+</tr>
+<tr>
+<td>UDP</td>
+<td style="text-align:center">AMP_Flood; UDP_Plain; Fraggle_Attack</td>
+<td style="text-align:right">UDP_Plain; Small_Package_Flood</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td>TCP</td>
+<td style="text-align:center">SYN_Flood; ACK_Flood</td>
+<td style="text-align:right">ACK_Flood</td>
+<td style="text-align:right">SYN_Flood; Slow_Read_Attack;</td>
+<td style="text-align:right">Teardrop_Attack</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td style="text-align:center">DNS_Flood; RSD_Attack</td>
+<td style="text-align:right">DNS_Flood; RSD_Attack</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td style="text-align:center"></td>
+<td style="text-align:right">CC_Flood; SSL_Flood</td>
+<td style="text-align:right">Slowloris; RUDY</td>
+<td style="text-align:right">CC_Flood; SSL_Flood</td>
+</tr>
+<tr>
+<td>VoIP</td>
+<td style="text-align:center"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right">INVITE_of_Death</td>
+</tr>
+</tbody>
+</table>
+<p>一句话注释：</p>
+<ul>
+<li>AMP_Flood: 反射放大，DNS/NTP/CharGen等等，伪造源IP为受害者IP，发送请求流量到反射节点，响应流量就涌向受害者IP，响应包大小远大于请求包大小，是为“放大”</li>
+<li>SYN_Flood: 半连接状态，受害者协议栈需要保存大量状态信息，同时，很多会带有payload，顺道消耗带宽</li>
+<li>UDP_Plain: 大量UDP包瞬间发往目的IP，阻塞目的链路，包一般很大，当前存在两组攻击者，一组喜欢填充500字节左右，一组喜欢填充1k以上，也有超过1500的，会导致产生0端口Fregment碎片</li>
+<li>Small_Package_Flood: 类似UDP_Plain, 不过包一般很小，基本都在50字节以下</li>
+<li>ACK_Flood: TCP版本的UDP_Plain, 包大小分布非常相似，但是，除了耗费带宽外，还耗费TCP协议栈针对ack包的的查表操作</li>
+<li>DNS_Flood: 伪造大量DNS请求包，发送给DNS cache 服务器或者DNS权威，以期拖垮DNS服务</li>
+<li>RSD_Attack: 目的类似DNS_Flood，不过攻击手法是伪造大量随机子域名，响应都是NXDOMAIN，因此就算请求到cache服务器，也可以穿透cache服务器的TTL，间接攻击到权威服务器</li>
+<li>CC_Flood: HTTP Flood的别称，具有业务针对性，基本都是找受害者的http响应中最耗费性能的那个链接，比如计算密集的，或者数据库查询比较重的，以此来拖垮服务器</li>
+<li>SSL_Flood: SSL协议协商对计算要求较高，因此大量的SSL连接请求，可以直接将SSL接入服务器CPU耗尽</li>
+<li>GRE_Flood: GRE是封包协议，大量GRE包，一方面可以消耗带宽，一方面可以耗费解包CPU资源</li>
+<li>Ping_Flood: 大量的ping，硬干</li>
+<li>Slowloris: 大量HTTP长连接，GET请求但是永远不发送\r\n结束，耗尽服务端连接池</li>
+<li>RUDY: 类似Slowloris, 不过是通过设置一个超大的content-length header来构造一个永不停止的POST请求，进而耗费目标服务的连接池</li>
+<li>Ping_of_Death: ping的畸形包或者超大包，目标系统重组的时候会由overflow引起的crash</li>
+<li>Smurf_Attack: 伪造源IP为要攻击的目标IP，给广播地址发ping，所有的echo就涌向了受害者IP</li>
+<li>Fraggle_Attack: UDP版本的Smurf, 使用UDP的端口7（echo）和端口19(CharGEN)</li>
+<li>Slow_Read_Attack: 和受害者建立长连接，把TCP receive buffer设置的很小，慢慢读，耗费受害者连接池</li>
+<li>Teardrop_Attack: 利用某些操作系统IP碎片重组的bug来使目标系统crash</li>
+<li>INVITE_of_Death: 构造SIP INVITE畸形请求包来使目标系统crash</li>
+</ul>
+<p>上面的分类，是站在“看到攻击”的角度。如果站在“防御攻击”的角度，那下一个DDoS攻击精细化的分类维度应该是“攻击路径”: 是脚本直接发包？还是借助proxy？还是借助反射点？还是通过服务穿透？还是利用Bot？确定了攻击路径，才能找到最合适的防御位置。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/10/07/big-data-and-machine-learning/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1611,140 +1822,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/03/16/c-frind-get-private-value/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="YANG XU">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/touxiang.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="CYBerATtacK">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2015/03/16/c-frind-get-private-value/" itemprop="url">
-                  c++ 通过 frind 来获取一个类的 private 成员变量
-                </a>
-              
-            
-          </h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2015-03-16T18:46:38+08:00">
-                2015-03-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>有个朋友问到一个给定的不可变的类，且是安装好的三方库，不能改代码，不能重新编译，想获取其私有变量，有什么方法？<br>答案是友元～</p>
-<p>lib头文件 t.h<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"></div><div class="line"><span class="keyword">class</span> P&#123;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        <span class="built_in">std</span>::<span class="built_in">string</span> private_string;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        P();</div><div class="line"></div><div class="line">    <span class="comment">//friend class G;    // ADD THIS LINE</span></div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
-<p>lib代码 t.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"t.h"</span></span></div><div class="line"></div><div class="line">P::P():private_string(<span class="string">"private_string"</span>)&#123;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>上面两个文件编译为libt。注意这时候上面friend是屏蔽掉的，因为我们假定原始给定的头文件没有友元。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ -c <span class="_">-f</span>PIC t.cc -o t.o</div><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ -shared -o libt.so t.o</div></pre></td></tr></table></figure></p>
-<p>我们自己的测试代码m.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"t.h"</span></span></div><div class="line"></div><div class="line"><span class="keyword">struct</span> G&#123;</div><div class="line">    <span class="built_in">std</span>::<span class="function"><span class="built_in">string</span> <span class="title">get_private</span><span class="params">(<span class="keyword">const</span> P&amp; p)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> p.private_string;</div><div class="line">    &#125;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></div><div class="line">&#123;</div><div class="line">    P p;</div><div class="line">    G g;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; g.get_private(p) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>此时如果不把上述friend行打开，直接编译会报错：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ m.cc <span class="_">-lt</span> -L./</div><div class="line">m.cc:6:18: error: <span class="string">'private_string'</span> is a private member of <span class="string">'P'</span></div><div class="line">        <span class="built_in">return</span> p.private_string;</div><div class="line">                 ^</div><div class="line">./t.h:5:21: note: declared private here</div><div class="line">        std::string private_string;</div><div class="line">                    ^</div><div class="line">1 error generated.</div></pre></td></tr></table></figure></p>
-<p>这是符合预期的，因为就是要测试friend行代码的效用嘛～打开后就能正常编译执行。<br>我的测试环境是mac+clang，如果是linux＋g++，最后编译可执行文件时需要增加运行期lib查找路径 -Wl,-rpath=./</p>
-<p>总结：</p>
-<ul>
-<li>class的private/protected权限是编译期的行为，提供的是编译期的内存获取权限的检查，编译完成后就没有任何约束了</li>
-<li>因此，我们想要获取一个给定对象的私有变量，是我们自己代码编译时期的权限检查，只要保证自己代码编译时有friend来放开权限即可</li>
-</ul>
-<div class="note warning"><p>如果给定一个类，对于其私有成员变量，直接get有时候可以理解，绝不要直接set，在不知道原本class实现的前提下，极有可能会破坏其内部实现的逻辑</p>
-</div>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -1794,7 +1871,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-count">13</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -1806,7 +1883,7 @@
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
+              <a href="/tags/index.html">
                 <span class="site-state-item-count">22</span>
                 <span class="site-state-item-name">tags</span>
               </a>

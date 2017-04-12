@@ -323,6 +323,140 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/03/16/c-frind-get-private-value/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2015/03/16/c-frind-get-private-value/" itemprop="url">
+                  c++ 通过 frind 来获取一个类的 private 成员变量
+                </a>
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2015-03-16T18:46:38+08:00">
+                2015-03-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>有个朋友问到一个给定的不可变的类，且是安装好的三方库，不能改代码，不能重新编译，想获取其私有变量，有什么方法？<br>答案是友元～</p>
+<p>lib头文件 t.h<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"></div><div class="line"><span class="keyword">class</span> P&#123;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        <span class="built_in">std</span>::<span class="built_in">string</span> private_string;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        P();</div><div class="line"></div><div class="line">    <span class="comment">//friend class G;    // ADD THIS LINE</span></div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
+<p>lib代码 t.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"t.h"</span></span></div><div class="line"></div><div class="line">P::P():private_string(<span class="string">"private_string"</span>)&#123;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>上面两个文件编译为libt。注意这时候上面friend是屏蔽掉的，因为我们假定原始给定的头文件没有友元。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ -c <span class="_">-f</span>PIC t.cc -o t.o</div><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ -shared -o libt.so t.o</div></pre></td></tr></table></figure></p>
+<p>我们自己的测试代码m.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"t.h"</span></span></div><div class="line"></div><div class="line"><span class="keyword">struct</span> G&#123;</div><div class="line">    <span class="built_in">std</span>::<span class="function"><span class="built_in">string</span> <span class="title">get_private</span><span class="params">(<span class="keyword">const</span> P&amp; p)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> p.private_string;</div><div class="line">    &#125;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></div><div class="line">&#123;</div><div class="line">    P p;</div><div class="line">    G g;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; g.get_private(p) &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>此时如果不把上述friend行打开，直接编译会报错：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[xuamao@xuamaos-MacBook-Pro:~/qdev/<span class="built_in">test</span>]$ g++ m.cc <span class="_">-lt</span> -L./</div><div class="line">m.cc:6:18: error: <span class="string">'private_string'</span> is a private member of <span class="string">'P'</span></div><div class="line">        <span class="built_in">return</span> p.private_string;</div><div class="line">                 ^</div><div class="line">./t.h:5:21: note: declared private here</div><div class="line">        std::string private_string;</div><div class="line">                    ^</div><div class="line">1 error generated.</div></pre></td></tr></table></figure></p>
+<p>这是符合预期的，因为就是要测试friend行代码的效用嘛～打开后就能正常编译执行。<br>我的测试环境是mac+clang，如果是linux＋g++，最后编译可执行文件时需要增加运行期lib查找路径 -Wl,-rpath=./</p>
+<p>总结：</p>
+<ul>
+<li>class的private/protected权限是编译期的行为，提供的是编译期的内存获取权限的检查，编译完成后就没有任何约束了</li>
+<li>因此，我们想要获取一个给定对象的私有变量，是我们自己代码编译时期的权限检查，只要保证自己代码编译时有friend来放开权限即可</li>
+</ul>
+<div class="note warning"><p>如果给定一个类，对于其私有成员变量，直接get有时候可以理解，绝不要直接set，在不知道原本class实现的前提下，极有可能会破坏其内部实现的逻辑</p>
+</div>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/03/11/wireshark-tshark-hijack/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -572,7 +706,7 @@
           
             <div class="post-gallery-row">
               <a class="post-gallery-img fancybox"
-                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj1ejpq6q000evnrz5asc8xpn"
+                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj1ezve54000i69rzuxbppp3h"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" itemprop="contentUrl"/>
               </a>
@@ -580,7 +714,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj1ejpq6q000evnrz5asc8xpn"
+                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj1ezve54000i69rzuxbppp3h"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" itemprop="contentUrl"/>
               </a>
@@ -588,7 +722,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj1ejpq6q000evnrz5asc8xpn"
+                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj1ezve54000i69rzuxbppp3h"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" itemprop="contentUrl"/>
               </a>
@@ -723,7 +857,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-count">13</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -735,7 +869,7 @@
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
+              <a href="/tags/index.html">
                 <span class="site-state-item-count">22</span>
                 <span class="site-state-item-name">tags</span>
               </a>
