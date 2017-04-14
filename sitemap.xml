@@ -2,16 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://cybatk.com/2016/01/14/ddos-backbone-vs-border/</loc>
+    <loc>http://cybatk.com/2017/04/05/re2-regex-speed-up/</loc>
     
-    <lastmod>2017-04-14T04:42:26.000Z</lastmod>
+    <lastmod>2017-04-14T04:49:16.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>http://cybatk.com/2016/05/12/ddos-types/</loc>
+    <loc>http://cybatk.com/2016/01/14/ddos-backbone-vs-border/</loc>
     
-    <lastmod>2017-04-13T02:21:23.000Z</lastmod>
+    <lastmod>2017-04-14T04:42:26.000Z</lastmod>
     
   </url>
   
@@ -23,9 +23,9 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2017/04/05/re2-regex-speed-up/</loc>
+    <loc>http://cybatk.com/2016/05/12/ddos-types/</loc>
     
-    <lastmod>2017-04-12T08:34:46.000Z</lastmod>
+    <lastmod>2017-04-13T02:21:23.000Z</lastmod>
     
   </url>
   
@@ -65,14 +65,14 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2017/03/11/hexo-github-blog/</loc>
+    <loc>http://cybatk.com/2017/03/09/C-Tail-Call-Optimization/</loc>
     
     <lastmod>2017-03-27T02:30:51.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>http://cybatk.com/2015/09/24/crontab-notes/</loc>
+    <loc>http://cybatk.com/2015/03/16/c-frind-get-private-value/</loc>
     
     <lastmod>2017-03-27T02:30:51.000Z</lastmod>
     
@@ -86,13 +86,6 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2017/03/09/C-Tail-Call-Optimization/</loc>
-    
-    <lastmod>2017-03-27T02:30:51.000Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://cybatk.com/2015/03/11/wireshark-tshark-hijack/</loc>
     
     <lastmod>2017-03-27T02:30:51.000Z</lastmod>
@@ -100,7 +93,14 @@
   </url>
   
   <url>
-    <loc>http://cybatk.com/2015/03/16/c-frind-get-private-value/</loc>
+    <loc>http://cybatk.com/2015/09/24/crontab-notes/</loc>
+    
+    <lastmod>2017-03-27T02:30:51.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://cybatk.com/2017/03/11/hexo-github-blog/</loc>
     
     <lastmod>2017-03-27T02:30:51.000Z</lastmod>
     
@@ -128,6 +128,13 @@
   </url>
   
   <url>
+    <loc>http://cybatk.com/2016/10/16/Security-Bsides-Delaware-2016/</loc>
+    
+    <lastmod>2017-03-20T17:31:23.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://cybatk.com/tags/index.html</loc>
     
     <lastmod>2017-03-20T17:31:23.000Z</lastmod>
@@ -136,13 +143,6 @@
   
   <url>
     <loc>http://cybatk.com/tags/index2.html</loc>
-    
-    <lastmod>2017-03-20T17:31:23.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://cybatk.com/2016/10/16/Security-Bsides-Delaware-2016/</loc>
     
     <lastmod>2017-03-20T17:31:23.000Z</lastmod>
     

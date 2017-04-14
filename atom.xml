@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://cybatk.com/"/>
-  <updated>2017-04-12T08:34:46.000Z</updated>
+  <updated>2017-04-14T04:49:16.000Z</updated>
   <id>http://cybatk.com/</id>
   
   <author>
@@ -20,13 +20,13 @@
     <link href="http://cybatk.com/2017/04/05/re2-regex-speed-up/"/>
     <id>http://cybatk.com/2017/04/05/re2-regex-speed-up/</id>
     <published>2017-04-05T15:25:52.000Z</published>
-    <updated>2017-04-12T08:34:46.000Z</updated>
+    <updated>2017-04-14T04:49:16.000Z</updated>
     
     <content type="html"><![CDATA[<p>我们有个小系统，要load几十亿域名，支持字符串查询／正则模式匹配等等各种查找方式，以期找到满足模式的域名进行后续分析。</p>
 <p>普通的正则过程会比较慢，尤其正则越复杂，性能下降会很严重。当前load数据有50亿到100亿之间，一个复杂正则可能需要耗费几十分钟才能跑完。</p>
 <p>想到一个优化方法</p>
 <ul>
-<li>load数据的过程中，预先计算每个域名的组成，【0-9a-z】分别对应到一个bit，一个int64的整数足够</li>
+<li>load数据的过程中，预先计算每个域名的组成，【0-9a-z._-】分别对应到一个bit，一个int64的整数足够</li>
 <li>查询时，把正则中固定字符串提取出来，算固定字符串的组成，正则匹配之前，先看要检查的域名的对应的组成int64的位与是否能cover正则表达式的组成int64</li>
 </ul>
 <p>域名的组成很少会把所有的字符都用到，对于特定的模式，能有overlap的域名只是一小部分，而上述的位与检查会非常迅速，所以可以大大提高匹配过程的效率。粗略估算，提升在5倍左右，对于正则表达式，如果能提供的固定字符串越多，匹配越快，如果完全不包含固定字符串，那就退化到和之前一样了。</p>
@@ -37,7 +37,7 @@
 <p>这样做个小程序</p>
 <p>main.cc<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;argc; ++i)&#123;</div><div class="line">        <span class="keyword">auto</span> line = <span class="built_in">std</span>::<span class="built_in">string</span>(argv[i]);</div><div class="line">        re2::<span class="function">RE2 <span class="title">p</span><span class="params">(line)</span></span>;</div><div class="line">        <span class="keyword">if</span>(p.ok())&#123;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"&gt;&gt;&gt; "</span> &lt;&lt; line &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">string</span> pcc = p.RegexpDump();</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; pcc &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">        &#125;<span class="keyword">else</span>&#123;</div><div class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"&gt;&gt;&gt; "</span> &lt;&lt; line &lt;&lt; <span class="string">" Parse error."</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">[xuyang@dev:/secret/path/]$ ./repattern.exe <span class="string">'^hello[0-9]&#123;1,3&#125;\.[abc_.-]&#123;5,6&#125;world$'</span></div><div class="line">&gt;&gt;&gt; ^hello[0-9]&#123;1,3&#125;\.[abc_.-]&#123;5,6&#125;world$</div><div class="line">PATTERN &#123;</div><div class="line">  BOT &#123;&#125;</div><div class="line">  STR &#123;hello&#125;</div><div class="line">  REPEAT &#123;1,3</div><div class="line">    IN &#123;0x30-0x39&#125;</div><div class="line">  &#125;</div><div class="line">  CHR &#123;.&#125;</div><div class="line">  REPEAT &#123;5,6</div><div class="line">    IN &#123;0x2d-0x2e 0x5f 0x61-0x63&#125;</div><div class="line">  &#125;</div><div class="line">  STR &#123;world&#125;</div><div class="line">  EOT &#123;&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>上述STR／CHR的部分就是我们关心的“一个正则中固定字符串”的部分，可以用于我们的快速预计算</p>
+<p>上述STR／CHR的部分就是我们关心的“一个正则中固定字符串”的部分，这里是“hello.”，将其映射到一个uint64 for pattern。<br>正则匹配之前，先通过一个位与运算判断上面的uint64 for pattern是否被包含与uint64 for string, 不被包含的就说明原始字符串肯定不会含有hello.对应的所有字符，也就肯定不可能被正则匹配过程命中，直接忽略掉匹配过程，加速整体匹配性能。</p>
 ]]></content>
     
     <summary type="html">
