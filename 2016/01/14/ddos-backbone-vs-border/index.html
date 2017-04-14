@@ -89,7 +89,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Cyber-Security,Network-Security,网络安全,安全数据分析" />
+  <meta name="keywords" content="DDoS,nework security," />
 
 
 
@@ -107,15 +107,25 @@
 
 
 
-<meta name="description" content="coder &amp; cyber security related things">
-<meta property="og:type" content="website">
-<meta property="og:title" content="CYBerATtacK">
-<meta property="og:url" content="http://cybatk.com/archives/2015/10/index.html">
+<meta name="description" content="当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。
+数据检测基于数据，先说数据差异。
+数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
+Point">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDoS检测 - 骨干网与企业安全边界的差异">
+<meta property="og:url" content="http://cybatk.com/2016/01/14/ddos-backbone-vs-border/index.html">
 <meta property="og:site_name" content="CYBerATtacK">
-<meta property="og:description" content="coder &amp; cyber security related things">
+<meta property="og:description" content="当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。
+数据检测基于数据，先说数据差异。
+数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
+Point">
+<meta property="og:updated_time" content="2017-04-14T04:42:26.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="CYBerATtacK">
-<meta name="twitter:description" content="coder &amp; cyber security related things">
+<meta name="twitter:title" content="DDoS检测 - 骨干网与企业安全边界的差异">
+<meta name="twitter:description" content="当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。
+数据检测基于数据，先说数据差异。
+数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
+Point">
 
 
 
@@ -143,13 +153,13 @@
 
 
 
-  <link rel="canonical" href="http://cybatk.com/archives/2015/10/"/>
+  <link rel="canonical" href="http://cybatk.com/2016/01/14/ddos-backbone-vs-border/"/>
 
 
 
 
 
-  <title> Archive | CYBerATtacK </title>
+  <title> DDoS检测 - 骨干网与企业安全边界的差异 | CYBerATtacK </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="en">
@@ -183,7 +193,7 @@
     
   
 
-  <div class="container sidebar-position-left  page-archive  ">
+  <div class="container sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -311,66 +321,178 @@
           <div id="content" class="content">
             
 
-  <section id="posts" class="posts-collapse">
-    <span class="archive-move-on"></span>
+  <div id="posts" class="posts-expand">
+    
 
-    <span class="archive-page-counter">
-      
-      
-      
-        
-      
-      Um..! 14 posts in total. Keep on posting.
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2016/01/14/ddos-backbone-vs-border/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
     </span>
 
     
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                DDoS检测 - 骨干网与企业安全边界的差异
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-01-14T21:52:33+08:00">
+                2016-01-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
 
       
       
-      
 
+      
+        <p>当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。<br>同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。</p>
+<h1 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h1><p>检测基于数据，先说数据差异。</p>
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。</p>
+<h2 id="Point-View-vs-Scape-View"><a href="#Point-View-vs-Scape-View" class="headerlink" title="Point View vs. Scape View"></a>Point View vs. Scape View</h2><p>企业看到针对自己这个点的数据，大网看的是整体。设定两个数量集规模M和N，M比N大2个数量级，安全边界看到的是M：N， 大网看到的是M：M。<br>因此，大网背景流量大很多，意味着噪音大很多，意味着很多即便是大攻击，但是淹没在更巨大的背景流量下，反而很小了，需要耗费更大的精力来定位分析。<br>但是大网的大背景流量在某些场景下也有优势，比如企业很难发现或者确认scanner，但是大网上由于自己的Scape View，确认Scanner反而简单。</p>
+<h2 id="Full-Data-vs-Partial-Data"><a href="#Full-Data-vs-Partial-Data" class="headerlink" title="Full Data vs. Partial Data"></a>Full Data vs. Partial Data</h2><p>企业安全边界对应Full Data很容易理解。大网上，Partial Data有两层含义：<br>1, 大网上看到针对一个IP的流量，只能是整体数据的一部分：很多我们采集点之外的数据我们是看不到的，更多大网采集点层级之下的数据我们也是看不到的<br>2，是进出数据的一边：在大网骨干路由上，来去的流量不一定是经过同一个地方，因此大网上某个点常常会看到单向流量</p>
+<p>由于DDoS攻击流量基本上是全网窜，因此1带来的困难只是检测精细化的工程难度，2带来的更难处理，因为单向流量直接影响到了判定，看到一个IP只接受RST包，怎么确定这是RST Flood还是它是被Spoofed IP来SYN_ACK Flood攻击别人呢？</p>
+<h1 id="业务"><a href="#业务" class="headerlink" title="业务"></a>业务</h1><h2 id="Manage-Object／管理对象／资源／业务对象"><a href="#Manage-Object／管理对象／资源／业务对象" class="headerlink" title="Manage Object／管理对象／资源／业务对象"></a>Manage Object／管理对象／资源／业务对象</h2><p>企业都会有自己的资源／业务梳理，大网是没有的，我们当前可用的只有PDNS带给我们的domain-IP的映射关系，但是由于有CDN的存在，这个也存在部分问题。</p>
+<h2 id="Baseline"><a href="#Baseline" class="headerlink" title="Baseline"></a>Baseline</h2><p>企业既然可以梳理出MO，那也就可以根据MO来确定一个baseline，流量大小的也好，访问态势的也好，总有能力刻画一个常态的profile，但是大网监控，第一不可能有一个可梳理的baselien，第二，大网上异常太多，业务故障／业务调整／网络异常／攻击等等情况时刻都在发生，就算有baseline，那超出baseline部分的异常，仍旧是多到难以处理，所以有了baseline也要丢掉，直接去看数据中的强特征更靠谱。</p>
+<h1 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h1><h2 id="看到-vs-防住"><a href="#看到-vs-防住" class="headerlink" title="看到 vs. 防住"></a>看到 vs. 防住</h2><p>企业安全防护，工作的衡量标准就是自己保护对象的可用性，当攻击发生时能不能防住。<br>既然以保护对象的可用性作为最终衡量标准，那基本上都是抓大放小，告警基线可以根据自己资源能力来调整一个比较高的阈值，小攻击，探测性的攻击，能忽略就忽略，毕竟这些事情的处理也是要耗费安全运营的资源，大到可能影响业务的攻击一旦发生，那势必立即响应，以求安全。</p>
+<p>我们做大网上的监控，更多的是想“看到”，大小都想看到。而且，更普遍的情况是，我们看到的小，只是因为我们的数据不全，只是在我们可见的范围内小，而实际攻击并不小。因此，我们看攻击没有“大小”的区别，只有“看到和看不到”的区别，我们要尽可能的“全看到”。</p>
+<p>于此带来的一个最典型的工程处理方法上的区别就是，安全边界的TopN更重要，而大网监控的SpikeRate更重要，TopN突出的是当前面对的最大的是谁，SpikeRate表达的是变化最大的是谁。</p>
+
+      
+    </div>
+
+    <div>
       
         
-        <div class="collection-title">
-          <h2 class="archive-year motion-element" id="archive-year-2015">2015</h2>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/DDoS/" rel="tag"># DDoS</a>
+          
+            <a href="/tags/nework-security/" rel="tag"># nework security</a>
+          
         </div>
       
+
+      
+        
       
 
       
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/10/07/big-data-and-machine-learning/" rel="next" title="大数据，机器学习，网络安全">
+                <i class="fa fa-chevron-left"></i> 大数据，机器学习，网络安全
+              </a>
+            
+          </div>
 
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+          <span class="post-nav-divider"></span>
 
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2015/10/07/big-data-and-machine-learning/" itemprop="url">
-              
-                <span itemprop="name">大数据，机器学习，网络安全</span>
-              
-            </a>
-        
-      </h2>
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/05/12/ddos-types/" rel="prev" title="DDoS Types">
+                DDoS Types <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2015-10-07T22:15:35+08:00"
-              content="2015-10-07" >
-          10-07
-        </time>
-      </div>
-
-    </header>
+      
+      
+    </footer>
   </article>
 
 
 
-    
+    <div class="post-spread">
+      
+        <!-- Go to www.addthis.com/dashboard to customize your tools -->
+<div class="addthis_inline_share_toolbox">
+  <script type = "text/javascript" src = "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-58c42267b9d94914" async = "async" ></script>
+</div>
 
-  </section>
-
-  
-
+      
+    </div>
+  </div>
 
 
           </div>
@@ -378,6 +500,10 @@
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -397,8 +523,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            Overview
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/images/touxiang.jpg"
@@ -511,6 +646,22 @@
       </section>
 
       
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#数据"><span class="nav-number">1.</span> <span class="nav-text">数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#数据类型"><span class="nav-number">1.1.</span> <span class="nav-text">数据类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Point-View-vs-Scape-View"><span class="nav-number">1.2.</span> <span class="nav-text">Point View vs. Scape View</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Full-Data-vs-Partial-Data"><span class="nav-number">1.3.</span> <span class="nav-text">Full Data vs. Partial Data</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#业务"><span class="nav-number">2.</span> <span class="nav-text">业务</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Manage-Object／管理对象／资源／业务对象"><span class="nav-number">2.1.</span> <span class="nav-text">Manage Object／管理对象／资源／业务对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Baseline"><span class="nav-number">2.2.</span> <span class="nav-text">Baseline</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#目标"><span class="nav-number">3.</span> <span class="nav-text">目标</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#看到-vs-防住"><span class="nav-number">3.1.</span> <span class="nav-text">看到 vs. 防住</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
 
       
 
@@ -615,11 +766,9 @@
   
 
   
-  
-    <script type="text/javascript" id="motion.page.archive">
-      $('.archive-year').velocity('transition.slideLeftIn');
-    </script>
-  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
 
 
   

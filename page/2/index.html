@@ -323,6 +323,131 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/09/24/crontab-notes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2015/09/24/crontab-notes/" itemprop="url">
+                  crontab notes
+                </a>
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2015-09-24T23:20:43+08:00">
+                2015-09-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。</p>
+<p>查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。</p>
+<p>我的监控命令用到了一个lsof，手动执行ok，但是crontab里面执行的时候是找不到的，需要设置PATH或者使用绝对路径。</p>
+<p>搜索“cron 环境变量 坑爹”有好多结果，我就不重复了。</p>
+<p>另外一个需要注意的是，crontab执行命令会默认将执行输出发用户邮箱，日积月累邮箱也会爆，所以命令一定记得 &gt;/dev/null 2&gt;&amp;1 重定向。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/03/16/c-frind-get-private-value/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -706,7 +831,7 @@
           
             <div class="post-gallery-row">
               <a class="post-gallery-img fancybox"
-                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj1fs6acl000ixqrz9sbwniqt"
+                 href="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" rel="gallery_cj1hcldon000kq5rzg329hxet"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx3.sinaimg.cn/mw690/6c4e11d1ly1fdwwlmkoehj212w1mc12f.jpg" itemprop="contentUrl"/>
               </a>
@@ -714,7 +839,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj1fs6acl000ixqrz9sbwniqt"
+                 href="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" rel="gallery_cj1hcldon000kq5rzg329hxet"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx4.sinaimg.cn/mw690/6c4e11d1ly1fdwwlk2kg9j212w1mcgux.jpg" itemprop="contentUrl"/>
               </a>
@@ -722,7 +847,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj1fs6acl000ixqrz9sbwniqt"
+                 href="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" rel="gallery_cj1hcldon000kq5rzg329hxet"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://wx1.sinaimg.cn/mw690/6c4e11d1ly1fdwwlnrrrhj212w1mc7cg.jpg" itemprop="contentUrl"/>
               </a>
@@ -857,7 +982,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">13</span>
+                <span class="site-state-item-count">14</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -869,8 +994,8 @@
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
-                <span class="site-state-item-count">22</span>
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">23</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>
