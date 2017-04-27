@@ -120,7 +120,7 @@ flint.real: flint是所有历史记录的数据，这个flint.real则是最近�
 flint: 基本的passive dns系统，domain-ip ip-domain的映射关系的历史记录查询. passivedns.cn，只对安全公司可信分析人员开放
 flint.real: flint是所有历史记录的数据，这个flint.real则是最近一">
 <meta property="og:image" content="http://cybatk.com/2017/03/13/pdns-process-notes/pdns.frame.png">
-<meta property="og:updated_time" content="2017-03-24T12:39:08.000Z">
+<meta property="og:updated_time" content="2017-04-27T10:38:36.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="PDNS系统设计实现总结">
 <meta name="twitter:description" content="从14年中开始，我们团队开始做中国最大的PassiveDNS系统，并在基本的PDNS系统之上，衍生了很多的额外的功能服务。当前我们有:
@@ -410,12 +410,16 @@ flint.real: flint是所有历史记录的数据，这个flint.real则是最近�
 <li>flint: 基本的passive dns系统，domain-ip ip-domain的映射关系的历史记录查询. <a href="https://passivedns.cn" target="_blank" rel="external">passivedns.cn</a>，只对安全公司可信分析人员开放</li>
 <li>flint.real: flint是所有历史记录的数据，这个flint.real则是最近一小时内的domain-ip/ip-domain的映射关系，数据实时分析的时候，实时的关系更重要</li>
 <li>domain_stat: 域名访问统计，可以区分不同的请求类型，不同的返回类型，不同的数据节点</li>
-<li>domain_access/client_access: 查询一段时间内，一个domain被哪些client访问，一个client都访问了哪些domain，交叉访问的记录数据</li>
-<li>profile_domain/profile_client/profile_dnserv: domain/client/dnserv的profile数据，比如一个域名在一个时间点，被谁访问，来自哪些原端口，tid分别是多少，请求类型的分布是如何，返回的数据是如何分布的，响应这个domain 的dnserv都有哪些等等。在此基础上，可以实时判定诸如RSD攻击，子域名爆破，反射放大等各种安全事件</li>
 <li>pdns_capture: 给定过滤条件，实时抓取最新的DNS记录数据</li>
 <li>dtree：域名查找服务，给定一个模式，可以是子域名，可以是wildcard，可以是正则表达式，快速的在所有FQDN中查找符合模式的域名。很多安全分析文章都会对敏感域名打码，对我们而言，几乎天下无码。</li>
 </ul>
+<!--
+* domain_access/client_access: 查询一段时间内，一个domain被哪些client访问，一个client都访问了哪些domain，交叉访问的记录数据
+* profile_domain/profile_client/profile_dnserv: domain/client/dnserv的profile数据，比如一个域名在一个时间点，被谁访问，来自哪些原端口，tid分别是多少，请求类型的分布是如何，返回的数据是如何分布的，响应这个domain 的dnserv都有哪些等等。在此基础上，可以实时判定诸如RSD攻击，子域名爆破，反射放大等各种安全事件
+-->
 <p>这是我在当前团队做的第一个服务，2年多来也一直在改进维护，除了前端接入原始数据是同事在做，中间的数据流，处理分析，入库，查询接口，都是我在做。其中艰辛很多，也感觉学到很多，资源不够如何权衡妥协，网络不如意服务如何调度分派，数据放量如何动态扩展，很多细节如果不看代码都要忘记了。刚好年初数据放量，重新梳理代码优化了一下性能，趁机聊作记录以备忘。</p>
+<div class="note danger"><p><strong>考虑到用户隐私，所有涉及client ip的地方要做混淆, 混淆后的数据可用于数据的关联</strong></p>
+</div>
 <div class="note default"><p>出于保密的需求，具体架构不能说太细，数据库设计不会涉及，更多的是偏重功能+场景+实现妥协技巧这些容易遗忘的东西</p>
 </div>
 <h1 id="数据采集点的区别"><a href="#数据采集点的区别" class="headerlink" title="数据采集点的区别"></a>数据采集点的区别</h1><p>数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据，那些能做，哪些不能做。不同的采集点，采集到的数据不一样，量有大小的区别，覆盖范围有区别，可以提取出来的特征不一样，因此对于既定的分析目标，可能一个采集点的数据可以轻而易举的完成，而另外一个采集点可能做起来会非常费力，甚或天然的就无法做到。</p>
@@ -453,8 +457,6 @@ flint.real: flint是所有历史记录的数据，这个flint.real则是最近�
 <li>sensor：负责原始DNS流量的抓取，解析，配对过程，形成最终的record，然后以hash(client ip/24)为key将数据publish出来</li>
 <li>hasher：接受从sensor的record数据，然后以hash(SLD)的形式将数据publish出来</li>
 </ul>
-<div class="note default"><p>考虑到用户隐私，client ip可以做混淆</p>
-</div>
 <h2 id="应对超大量数据"><a href="#应对超大量数据" class="headerlink" title="应对超大量数据"></a>应对超大量数据</h2><ul>
 <li>数据水平切分，client／domain两大维度，后续详细分析</li>
 <li>传输使用Zmq，pub/sub模式，单ctx足够</li>
@@ -638,7 +640,7 @@ flint.real: flint是所有历史记录的数据，这个flint.real则是最近�
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">14</span>
+                <span class="site-state-item-count">15</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -650,8 +652,8 @@ flint.real: flint是所有历史记录的数据，这个flint.real则是最近�
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
-                <span class="site-state-item-count">23</span>
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">24</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>

@@ -323,6 +323,145 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/04/27/mongo-find-count/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2017/04/27/mongo-find-count/" itemprop="url">
+                  pymongo find操作的limit限制对返回的cursor.count() 默认不生效
+                </a>
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-04-27T19:47:33+08:00">
+                2017-04-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>我们有一个web服务的mongo连接池，对每一个mongo find查询，我们会在日志中记录查询条件及其返回数据的count，从后可以方便的后续定位问题。<br>最开始使用的count方法是</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">result = monger.find(cond);</div><div class="line">count  = result.count()</div></pre></td></tr></table></figure>
+<p>出问题了，mongo后台记录了很多command: count慢查日志，在有这些慢查的时候，mongo库性能急剧下降，几乎不可用。</p>
+<p>排查代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">print</span> <span class="string">"0x00 len(list(mongor.table.find(cond))) COUNT: "</span>, len(list(mongor.table.find(cond)))</div><div class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> enumerate(mongor.table.find(cond, fields=[<span class="string">"types"</span>])):</div><div class="line">    <span class="keyword">print</span> <span class="string">"\t"</span>, i, v</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x01 mongor.table.find(cond, limit=1).count() COUNT: "</span>, mongor.table.find(cond, limit=<span class="number">1</span>).count()</div><div class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> enumerate(mongor.table.find(cond, fields=[<span class="string">"types"</span>], limit=<span class="number">1</span>)):</div><div class="line">    <span class="keyword">print</span> <span class="string">"\t"</span>, i, v</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x02 mongor.table.find(cond).limit(1).count() COUNT: "</span>, mongor.table.find(cond).limit(<span class="number">1</span>).count()</div><div class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> enumerate(mongor.table.find(cond, fields=[<span class="string">"types"</span>]).limit(<span class="number">1</span>)):</div><div class="line">    <span class="keyword">print</span> <span class="string">"\t"</span>, i, v</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x03 mongor.table.find(cond, limit=1).count(True) COUNT: "</span>, mongor.table.find(cond, limit=<span class="number">1</span>).count(<span class="keyword">True</span>)</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x04 mongor.table.find(cond).limit(1).count(True) COUNT: "</span>, mongor.table.find(cond).limit(<span class="number">1</span>).count(<span class="keyword">True</span>)</div></pre></td></tr></table></figure>
+<p>执行结果如下：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">0x00 len(list(mongor.table.find(cond))) COUNT:  2</div><div class="line">    0 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb2c52d616749494d9cb9'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line">    1 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb0ef2d616749494d98df'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line"></div><div class="line">0x01 mongor.table.find(cond, <span class="built_in">limit</span>=1).count() COUNT:  2</div><div class="line">    0 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb2c52d616749494d9cb9'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line"></div><div class="line">0x02 mongor.table.find(cond).limit(1).count() COUNT:  2</div><div class="line">    0 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb2c52d616749494d9cb9'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line"></div><div class="line">0x03 mongor.table.find(cond, <span class="built_in">limit</span>=1).count(True) COUNT:  1</div><div class="line"></div><div class="line">0x04 mongor.table.find(cond).limit(1).count(True) COUNT:  1</div></pre></td></tr></table></figure></p>
+<p>可以看到</p>
+<ul>
+<li>0x00 的情况，就是针对结果集数据进行在业务层自己算count，一共两条数据</li>
+<li>0x01 的情况，limit在find内，对cursor的count不起作用，尽管最终输出一条结果，但是count仍然是2条</li>
+<li>0x02 的情况，limit在find外，结果同0x01, limit对count不起作用</li>
+<li>0x03 &amp; 0x04, 不管limit在哪，count的时候，执行加上True参数，limit条件就可以起作用了, True参数对应的是applySkipLimit, 是否考虑skip和limit的影响，默认为False，具体参见 <a href="https://docs.mongodb.com/manual/reference/method/cursor.count/" target="_blank" rel="external">文档 cursor.count</a></li>
+</ul>
+<p>因此，我们之前的查询，尽管find的时候设置了limit，但是由于cursor.count(default: False)的存在，仍然相当于把cursor对应的满足条件的所有数据都遍历一遍。假定一个查询条件，库中满足的结果有很多很多，那这个count就带来了慢查，拖慢了整个mongo库。</p>
+<p>总结：</p>
+<ul>
+<li>尽管count提供了applySkipLimit参数，但是默认为False为败笔，因为count在limit之后，这个默认和前后顺序关系逻辑不一致</li>
+<li>如果结果注定是要返回的，最好就直接对结果集算count，不要用curosr.count()，省一次command: count操作</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/04/05/re2-regex-speed-up/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -707,12 +846,16 @@
 <li>flint: 基本的passive dns系统，domain-ip ip-domain的映射关系的历史记录查询. <a href="https://passivedns.cn" target="_blank" rel="external">passivedns.cn</a>，只对安全公司可信分析人员开放</li>
 <li>flint.real: flint是所有历史记录的数据，这个flint.real则是最近一小时内的domain-ip/ip-domain的映射关系，数据实时分析的时候，实时的关系更重要</li>
 <li>domain_stat: 域名访问统计，可以区分不同的请求类型，不同的返回类型，不同的数据节点</li>
-<li>domain_access/client_access: 查询一段时间内，一个domain被哪些client访问，一个client都访问了哪些domain，交叉访问的记录数据</li>
-<li>profile_domain/profile_client/profile_dnserv: domain/client/dnserv的profile数据，比如一个域名在一个时间点，被谁访问，来自哪些原端口，tid分别是多少，请求类型的分布是如何，返回的数据是如何分布的，响应这个domain 的dnserv都有哪些等等。在此基础上，可以实时判定诸如RSD攻击，子域名爆破，反射放大等各种安全事件</li>
 <li>pdns_capture: 给定过滤条件，实时抓取最新的DNS记录数据</li>
 <li>dtree：域名查找服务，给定一个模式，可以是子域名，可以是wildcard，可以是正则表达式，快速的在所有FQDN中查找符合模式的域名。很多安全分析文章都会对敏感域名打码，对我们而言，几乎天下无码。</li>
 </ul>
+<!--
+* domain_access/client_access: 查询一段时间内，一个domain被哪些client访问，一个client都访问了哪些domain，交叉访问的记录数据
+* profile_domain/profile_client/profile_dnserv: domain/client/dnserv的profile数据，比如一个域名在一个时间点，被谁访问，来自哪些原端口，tid分别是多少，请求类型的分布是如何，返回的数据是如何分布的，响应这个domain 的dnserv都有哪些等等。在此基础上，可以实时判定诸如RSD攻击，子域名爆破，反射放大等各种安全事件
+-->
 <p>这是我在当前团队做的第一个服务，2年多来也一直在改进维护，除了前端接入原始数据是同事在做，中间的数据流，处理分析，入库，查询接口，都是我在做。其中艰辛很多，也感觉学到很多，资源不够如何权衡妥协，网络不如意服务如何调度分派，数据放量如何动态扩展，很多细节如果不看代码都要忘记了。刚好年初数据放量，重新梳理代码优化了一下性能，趁机聊作记录以备忘。</p>
+<div class="note danger"><p><strong>考虑到用户隐私，所有涉及client ip的地方要做混淆, 混淆后的数据可用于数据的关联</strong></p>
+</div>
 <div class="note default"><p>出于保密的需求，具体架构不能说太细，数据库设计不会涉及，更多的是偏重功能+场景+实现妥协技巧这些容易遗忘的东西</p>
 </div>
 <h1 id="数据采集点的区别"><a href="#数据采集点的区别" class="headerlink" title="数据采集点的区别"></a>数据采集点的区别</h1><p>数据分析的前提是要懂数据，懂数据的前提就是要知道数据从哪来，是什么样子的，从而可以知道对于得到的数据，那些能做，哪些不能做。不同的采集点，采集到的数据不一样，量有大小的区别，覆盖范围有区别，可以提取出来的特征不一样，因此对于既定的分析目标，可能一个采集点的数据可以轻而易举的完成，而另外一个采集点可能做起来会非常费力，甚或天然的就无法做到。</p>
@@ -750,8 +893,6 @@
 <li>sensor：负责原始DNS流量的抓取，解析，配对过程，形成最终的record，然后以hash(client ip/24)为key将数据publish出来</li>
 <li>hasher：接受从sensor的record数据，然后以hash(SLD)的形式将数据publish出来</li>
 </ul>
-<div class="note default"><p>考虑到用户隐私，client ip可以做混淆</p>
-</div>
 <h2 id="应对超大量数据"><a href="#应对超大量数据" class="headerlink" title="应对超大量数据"></a>应对超大量数据</h2><ul>
 <li>数据水平切分，client／domain两大维度，后续详细分析</li>
 <li>传输使用Zmq，pub/sub模式，单ctx足够</li>
@@ -1650,7 +1791,7 @@
           
             <p>当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。<br>同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。</p>
 <h1 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h1><p>检测基于数据，先说数据差异。</p>
-<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。</p>
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是流量摘要数据。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。</p>
 <h2 id="Point-View-vs-Scape-View"><a href="#Point-View-vs-Scape-View" class="headerlink" title="Point View vs. Scape View"></a>Point View vs. Scape View</h2><p>企业看到针对自己这个点的数据，大网看的是整体。设定两个数量集规模M和N，M比N大2个数量级，安全边界看到的是M：N， 大网看到的是M：M。<br>因此，大网背景流量大很多，意味着噪音大很多，意味着很多即便是大攻击，但是淹没在更巨大的背景流量下，反而很小了，需要耗费更大的精力来定位分析。<br>但是大网的大背景流量在某些场景下也有优势，比如企业很难发现或者确认scanner，但是大网上由于自己的Scape View，确认Scanner反而简单。</p>
 <h2 id="Full-Data-vs-Partial-Data"><a href="#Full-Data-vs-Partial-Data" class="headerlink" title="Full Data vs. Partial Data"></a>Full Data vs. Partial Data</h2><p>企业安全边界对应Full Data很容易理解。大网上，Partial Data有两层含义：<br>1, 大网上看到针对一个IP的流量，只能是整体数据的一部分：很多我们采集点之外的数据我们是看不到的，更多大网采集点层级之下的数据我们也是看不到的<br>2，是进出数据的一边：在大网骨干路由上，来去的流量不一定是经过同一个地方，因此大网上某个点常常会看到单向流量</p>
 <p>由于DDoS攻击流量基本上是全网窜，因此1带来的困难只是检测精细化的工程难度，2带来的更难处理，因为单向流量直接影响到了判定，看到一个IP只接受RST包，怎么确定这是RST Flood还是它是被Spoofed IP来SYN_ACK Flood攻击别人呢？</p>
@@ -1659,141 +1800,6 @@
 <h1 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h1><h2 id="看到-vs-防住"><a href="#看到-vs-防住" class="headerlink" title="看到 vs. 防住"></a>看到 vs. 防住</h2><p>企业安全防护，工作的衡量标准就是自己保护对象的可用性，当攻击发生时能不能防住。<br>既然以保护对象的可用性作为最终衡量标准，那基本上都是抓大放小，告警基线可以根据自己资源能力来调整一个比较高的阈值，小攻击，探测性的攻击，能忽略就忽略，毕竟这些事情的处理也是要耗费安全运营的资源，大到可能影响业务的攻击一旦发生，那势必立即响应，以求安全。</p>
 <p>我们做大网上的监控，更多的是想“看到”，大小都想看到。而且，更普遍的情况是，我们看到的小，只是因为我们的数据不全，只是在我们可见的范围内小，而实际攻击并不小。因此，我们看攻击没有“大小”的区别，只有“看到和看不到”的区别，我们要尽可能的“全看到”。</p>
 <p>于此带来的一个最典型的工程处理方法上的区别就是，安全边界的TopN更重要，而大网监控的SpikeRate更重要，TopN突出的是当前面对的最大的是谁，SpikeRate表达的是变化最大的是谁。</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2015/10/07/big-data-and-machine-learning/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="YANG XU">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/touxiang.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="CYBerATtacK">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2015/10/07/big-data-and-machine-learning/" itemprop="url">
-                  大数据，机器学习，网络安全
-                </a>
-              
-            
-          </h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2015-10-07T22:15:35+08:00">
-                2015-10-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>一些阶段性的看法：</p>
-<ul>
-<li>大数据，大在两个方面: 数量 和 维度</li>
-<li>单单数量大，不算真正的大数据，数据简单，特征简单，量的问题可以通过硬件资源的堆叠和各种优化算法的提升来解决</li>
-<li>维度的爆炸，带来的问题是数据特征难以被人把握，特定数据对应的特征的组合更隐蔽，更难以被人发现，需要更深入的专家知识和经验</li>
-<li>机器学习是为了应对维度的爆炸，顺带要搞定数据量的大，单单因为数据量大就上机器学习是错误的</li>
-<li>机器学习是黑箱，只能告诉我们是什么，而不能告知为什么，网络安全是非黑即白，必须要有为什么，有天然的矛盾存在</li>
-<li>情况0: 机器学习学习正常，作为数据过滤通道，而不是异常检测方式</li>
-<li>情况1: 机器学习解决大数据中初筛的功能，作为前置探测存在，产出各种可疑数据，但不是结果数据，后续还是有专家验证</li>
-<li>情况2：机器学习只作用在特定场景，产出有专家验证的可控的漏报误报，直接产出最终结果</li>
-<li>对信息安全行业整体而言，当前的壁垒还没到大数据，信息采集监控还没做好，基础做的差的很远，机器学习PR需求强于实际需求</li>
-<li>对信息安全特定方向而言，机器学习已经开始发挥作用</li>
-<li>机器学习应用到网络安全大数据的关键点： 去噪 &amp; 可验证。去噪好坏体现工程难度，决定后续工程难度，决定最终产出；验证是落地的必须环节。没法去噪，可以小步試错；没法验证，不要做</li>
-<li>机器学习，一方面解决的是人对大数据的无力，另一方面解决的是专家的知识壁垒。有些行业的专家要小心了</li>
-</ul>
 
           
         
@@ -1877,7 +1883,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">14</span>
+                <span class="site-state-item-count">15</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -1889,8 +1895,8 @@
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
-                <span class="site-state-item-count">23</span>
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">24</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>

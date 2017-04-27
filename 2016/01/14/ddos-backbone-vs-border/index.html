@@ -109,23 +109,23 @@
 
 <meta name="description" content="当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。
 数据检测基于数据，先说数据差异。
-数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
-Point">
+数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是流量摘要数据。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
+Point V">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DDoS检测 - 骨干网与企业安全边界的差异">
 <meta property="og:url" content="http://cybatk.com/2016/01/14/ddos-backbone-vs-border/index.html">
 <meta property="og:site_name" content="CYBerATtacK">
 <meta property="og:description" content="当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。
 数据检测基于数据，先说数据差异。
-数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
-Point">
-<meta property="og:updated_time" content="2017-04-14T04:42:26.000Z">
+数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是流量摘要数据。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
+Point V">
+<meta property="og:updated_time" content="2017-04-27T10:35:17.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="DDoS检测 - 骨干网与企业安全边界的差异">
 <meta name="twitter:description" content="当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。
 数据检测基于数据，先说数据差异。
-数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
-Point">
+数据类型安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是流量摘要数据。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。
+Point V">
 
 
 
@@ -405,7 +405,7 @@ Point">
       
         <p>当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。<br>同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。</p>
 <h1 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h1><p>检测基于数据，先说数据差异。</p>
-<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是netflow。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。</p>
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是流量摘要数据。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。</p>
 <h2 id="Point-View-vs-Scape-View"><a href="#Point-View-vs-Scape-View" class="headerlink" title="Point View vs. Scape View"></a>Point View vs. Scape View</h2><p>企业看到针对自己这个点的数据，大网看的是整体。设定两个数量集规模M和N，M比N大2个数量级，安全边界看到的是M：N， 大网看到的是M：M。<br>因此，大网背景流量大很多，意味着噪音大很多，意味着很多即便是大攻击，但是淹没在更巨大的背景流量下，反而很小了，需要耗费更大的精力来定位分析。<br>但是大网的大背景流量在某些场景下也有优势，比如企业很难发现或者确认scanner，但是大网上由于自己的Scape View，确认Scanner反而简单。</p>
 <h2 id="Full-Data-vs-Partial-Data"><a href="#Full-Data-vs-Partial-Data" class="headerlink" title="Full Data vs. Partial Data"></a>Full Data vs. Partial Data</h2><p>企业安全边界对应Full Data很容易理解。大网上，Partial Data有两层含义：<br>1, 大网上看到针对一个IP的流量，只能是整体数据的一部分：很多我们采集点之外的数据我们是看不到的，更多大网采集点层级之下的数据我们也是看不到的<br>2，是进出数据的一边：在大网骨干路由上，来去的流量不一定是经过同一个地方，因此大网上某个点常常会看到单向流量</p>
 <p>由于DDoS攻击流量基本上是全网窜，因此1带来的困难只是检测精细化的工程难度，2带来的更难处理，因为单向流量直接影响到了判定，看到一个IP只接受RST包，怎么确定这是RST Flood还是它是被Spoofed IP来SYN_ACK Flood攻击别人呢？</p>
@@ -548,7 +548,7 @@ Point">
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">14</span>
+                <span class="site-state-item-count">15</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -560,8 +560,8 @@ Point">
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
-                <span class="site-state-item-count">23</span>
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">24</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>

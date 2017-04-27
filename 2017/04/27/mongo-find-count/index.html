@@ -89,7 +89,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Cyber-Security,Network-Security,网络安全,安全数据分析" />
+  <meta name="keywords" content="pymongo,mongo," />
 
 
 
@@ -107,15 +107,22 @@
 
 
 
-<meta name="description" content="coder &amp; cyber security related things">
-<meta property="og:type" content="website">
-<meta property="og:title" content="CYBerATtacK">
-<meta property="og:url" content="http://cybatk.com/tags/netflow/index.html">
+<meta name="description" content="我们有一个web服务的mongo连接池，对每一个mongo find查询，我们会在日志中记录查询条件及其返回数据的count，从后可以方便的后续定位问题。最开始使用的count方法是
+12result = monger.find(cond);count  = result.count()
+出问题了，mongo后台记录了很多command: count慢查日志，在有这些慢查的时候，mongo库性能急">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pymongo find操作的limit限制对返回的cursor.count() 默认不生效">
+<meta property="og:url" content="http://cybatk.com/2017/04/27/mongo-find-count/index.html">
 <meta property="og:site_name" content="CYBerATtacK">
-<meta property="og:description" content="coder &amp; cyber security related things">
+<meta property="og:description" content="我们有一个web服务的mongo连接池，对每一个mongo find查询，我们会在日志中记录查询条件及其返回数据的count，从后可以方便的后续定位问题。最开始使用的count方法是
+12result = monger.find(cond);count  = result.count()
+出问题了，mongo后台记录了很多command: count慢查日志，在有这些慢查的时候，mongo库性能急">
+<meta property="og:updated_time" content="2017-04-27T10:23:42.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="CYBerATtacK">
-<meta name="twitter:description" content="coder &amp; cyber security related things">
+<meta name="twitter:title" content="pymongo find操作的limit限制对返回的cursor.count() 默认不生效">
+<meta name="twitter:description" content="我们有一个web服务的mongo连接池，对每一个mongo find查询，我们会在日志中记录查询条件及其返回数据的count，从后可以方便的后续定位问题。最开始使用的count方法是
+12result = monger.find(cond);count  = result.count()
+出问题了，mongo后台记录了很多command: count慢查日志，在有这些慢查的时候，mongo库性能急">
 
 
 
@@ -143,13 +150,13 @@
 
 
 
-  <link rel="canonical" href="http://cybatk.com/tags/netflow/"/>
+  <link rel="canonical" href="http://cybatk.com/2017/04/27/mongo-find-count/"/>
 
 
 
 
 
-  <title> Tag: netflow | CYBerATtacK </title>
+  <title> pymongo find操作的limit限制对返回的cursor.count() 默认不生效 | CYBerATtacK </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="en">
@@ -183,7 +190,7 @@
     
   
 
-  <div class="container sidebar-position-left  ">
+  <div class="container sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -311,46 +318,182 @@
           <div id="content" class="content">
             
 
-  <div id="posts" class="posts-collapse">
-    <div class="collection-title">
-      <h2 >
-        netflow
-        <small>Tag</small>
-      </h2>
-    </div>
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/04/27/mongo-find-count/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
 
     
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                pymongo find操作的limit限制对返回的cursor.count() 默认不生效
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-04-27T19:47:33+08:00">
+                2017-04-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
       
 
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+      
+        <p>我们有一个web服务的mongo连接池，对每一个mongo find查询，我们会在日志中记录查询条件及其返回数据的count，从后可以方便的后续定位问题。<br>最开始使用的count方法是</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">result = monger.find(cond);</div><div class="line">count  = result.count()</div></pre></td></tr></table></figure>
+<p>出问题了，mongo后台记录了很多command: count慢查日志，在有这些慢查的时候，mongo库性能急剧下降，几乎不可用。</p>
+<p>排查代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">print</span> <span class="string">"0x00 len(list(mongor.table.find(cond))) COUNT: "</span>, len(list(mongor.table.find(cond)))</div><div class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> enumerate(mongor.table.find(cond, fields=[<span class="string">"types"</span>])):</div><div class="line">    <span class="keyword">print</span> <span class="string">"\t"</span>, i, v</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x01 mongor.table.find(cond, limit=1).count() COUNT: "</span>, mongor.table.find(cond, limit=<span class="number">1</span>).count()</div><div class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> enumerate(mongor.table.find(cond, fields=[<span class="string">"types"</span>], limit=<span class="number">1</span>)):</div><div class="line">    <span class="keyword">print</span> <span class="string">"\t"</span>, i, v</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x02 mongor.table.find(cond).limit(1).count() COUNT: "</span>, mongor.table.find(cond).limit(<span class="number">1</span>).count()</div><div class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> enumerate(mongor.table.find(cond, fields=[<span class="string">"types"</span>]).limit(<span class="number">1</span>)):</div><div class="line">    <span class="keyword">print</span> <span class="string">"\t"</span>, i, v</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x03 mongor.table.find(cond, limit=1).count(True) COUNT: "</span>, mongor.table.find(cond, limit=<span class="number">1</span>).count(<span class="keyword">True</span>)</div><div class="line"><span class="keyword">print</span></div><div class="line"><span class="keyword">print</span> <span class="string">"0x04 mongor.table.find(cond).limit(1).count(True) COUNT: "</span>, mongor.table.find(cond).limit(<span class="number">1</span>).count(<span class="keyword">True</span>)</div></pre></td></tr></table></figure>
+<p>执行结果如下：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">0x00 len(list(mongor.table.find(cond))) COUNT:  2</div><div class="line">    0 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb2c52d616749494d9cb9'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line">    1 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb0ef2d616749494d98df'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line"></div><div class="line">0x01 mongor.table.find(cond, <span class="built_in">limit</span>=1).count() COUNT:  2</div><div class="line">    0 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb2c52d616749494d9cb9'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line"></div><div class="line">0x02 mongor.table.find(cond).limit(1).count() COUNT:  2</div><div class="line">    0 &#123;u<span class="string">'_id'</span>: ObjectId(<span class="string">'58fcb2c52d616749494d9cb9'</span>), u<span class="string">'types'</span>: u<span class="string">'udp@attack@simple_flood_target'</span>&#125;</div><div class="line"></div><div class="line">0x03 mongor.table.find(cond, <span class="built_in">limit</span>=1).count(True) COUNT:  1</div><div class="line"></div><div class="line">0x04 mongor.table.find(cond).limit(1).count(True) COUNT:  1</div></pre></td></tr></table></figure></p>
+<p>可以看到</p>
+<ul>
+<li>0x00 的情况，就是针对结果集数据进行在业务层自己算count，一共两条数据</li>
+<li>0x01 的情况，limit在find内，对cursor的count不起作用，尽管最终输出一条结果，但是count仍然是2条</li>
+<li>0x02 的情况，limit在find外，结果同0x01, limit对count不起作用</li>
+<li>0x03 &amp; 0x04, 不管limit在哪，count的时候，执行加上True参数，limit条件就可以起作用了, True参数对应的是applySkipLimit, 是否考虑skip和limit的影响，默认为False，具体参见 <a href="https://docs.mongodb.com/manual/reference/method/cursor.count/" target="_blank" rel="external">文档 cursor.count</a></li>
+</ul>
+<p>因此，我们之前的查询，尽管find的时候设置了limit，但是由于cursor.count(default: False)的存在，仍然相当于把cursor对应的满足条件的所有数据都遍历一遍。假定一个查询条件，库中满足的结果有很多很多，那这个count就带来了慢查，拖慢了整个mongo库。</p>
+<p>总结：</p>
+<ul>
+<li>尽管count提供了applySkipLimit参数，但是默认为False为败笔，因为count在limit之后，这个默认和前后顺序关系逻辑不一致</li>
+<li>如果结果注定是要返回的，最好就直接对结果集算count，不要用curosr.count()，省一次command: count操作</li>
+</ul>
 
-      <h2 class="post-title">
+      
+    </div>
+
+    <div>
+      
         
-            <a class="post-title-link" href="/2017/01/15/FloCon-2017/" itemprop="url">
-              
-                <span itemprop="name">FloCon 2017</span>
-              
-            </a>
+
+      
+    </div>
+
+    <div>
+      
         
-      </h2>
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2017-01-15T22:11:00+08:00"
-              content="2017-01-15" >
-          01-15
-        </time>
-      </div>
+      
+    </div>
 
-    </header>
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/pymongo/" rel="tag"># pymongo</a>
+          
+            <a href="/tags/mongo/" rel="tag"># mongo</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/04/05/re2-regex-speed-up/" rel="next" title="加速正则表达式匹配过程">
+                <i class="fa fa-chevron-left"></i> 加速正则表达式匹配过程
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
   </article>
 
 
-    
-  </div>
 
-  
+    <div class="post-spread">
+      
+        <!-- Go to www.addthis.com/dashboard to customize your tools -->
+<div class="addthis_inline_share_toolbox">
+  <script type = "text/javascript" src = "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-58c42267b9d94914" async = "async" ></script>
+</div>
+
+      
+    </div>
+  </div>
 
 
           </div>
@@ -358,6 +501,10 @@
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -393,7 +540,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">14</span>
+                <span class="site-state-item-count">15</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -405,8 +552,8 @@
             
             
             <div class="site-state-item site-state-tags">
-              <a href="/tags/index2.html">
-                <span class="site-state-item-count">23</span>
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">24</span>
                 <span class="site-state-item-name">tags</span>
               </a>
             </div>
@@ -595,6 +742,10 @@
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
 
   
 
