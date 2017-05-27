@@ -323,6 +323,162 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/05/26/pdns-white/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2017/05/26/pdns-white/" itemprop="url">
+                  PDNS 系统设计实现之二：PDNS白画像
+                </a>
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-05-26T23:27:22+08:00">
+                2017-05-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>在上一篇<a href="/2017/03/13/pdns-process-notes/">《PDNS系统设计实现总结》</a>中，简单记录了一下我们当前PDNS系统的结构关键点。但是，那篇里面主要提及的点，都是如何找出异常，对于PDNS系统而言，还有一个重要功能是对正常业务的刻画，今儿补上。</p>
+<p>做安全分析，着眼点都是异常是什么，为什么要通过DNS来对业务做画像呢？其实这个道理和杀毒软件的演进思路大同小异，因为异常是多变的，难以完全描述，甚或有时候难以捕捉，因此直接做黑名单黑规则，总有漏网之鱼，且规则要紧跟异常，否则漏的就越来越多。而从白名单的角度，业务的稳定性远远高于异常，因此如果能较为精确的梳理出业务的白画像，那异常的捕捉就能变得更为简单。</p>
+<p>直接上图。</p>
+<p><img src="/2017/05/26/pdns-white/pdns-white.png" alt="数据流程图"></p>
+<p>上述数据流程图中，从最开始数据接入归一化，自上而下分三路：左路是一般数据处理入库，大部分流程在上一篇中已经提及，是上一篇的重点；右路是实时异常检测，在上一篇中略有提及；中路就是今天的主角，如何利用PDNS系统来形成对业务的精确画像（Profile）。而中路中，数据处理入库和左路没有太大区别，业务的白画像数据，和左路数据的最大的改进就是过滤掉所有黑数据，因此重点就是图中着重标出的 Dynamic Filter 部分。</p>
+<p>先说一下睡在 Dynamic Filter 左边的兄弟 Static Filter。</p>
+<ul>
+<li>无效数据: 比如*.arpa等无意义数据</li>
+<li>无效纪录：比如SOA等无意义记录</li>
+<li>Pairing 失败：一条有效的PDNS数据比如要query和response的有效pairing，否则数据可能是伪造的</li>
+<li>响应为error：数据无用</li>
+<li>请求域名无效：有些请求的域名是无效的，但是有些open resolver仍旧会回复有效数据，这些意外的数据也应该过滤掉</li>
+<li>请求域名有效，响应看似有效，但是实际无效：比如一个example.com CNAME 到 not.exist.bla，如果不仔细教研rdata部分，很容易就会混入很多无效数据</li>
+<li>CDN第二跳域名: 有些CND的子域名不是固定的，变动特别频繁，这部分数据如果完全记录，那也将是数据灾难</li>
+</ul>
+<p>上述之所以归为Static Filter，是因为这些过滤的条件是简单易判断可以写死的条件，无需其他过程的介入和交互。那 Dynamic Filter 要过滤哪些数据呢？</p>
+<ul>
+<li>Abused DNS：spamhaus, dans tunnle CC指令，数据传送等等非正常DNS使用的</li>
+<li>Disposable domain：两个关键 cloudfront greencompute</li>
+<li>Sinkhole: 被sinkhole的数据只对安全分析有作用，绝对不可能是正常业务</li>
+<li>DGA ／ FustFlux等黑产域名</li>
+<li>DDNS动态域名: 这些域名数数count就好了</li>
+<li>黑帽SEO流量站以及站群带来的批量二级子域名</li>
+<li>子域名暴力破解 ＋ 泛解析</li>
+<li>域名暴力破解 ＋ gTLD泛解析</li>
+<li>DNS benchmark</li>
+<li>Chrome 随机域名探测</li>
+<li>随机前缀攻击</li>
+<li>DNS反射放大之A纪录填充</li>
+<li>安全防护DNS流量引流, CNAMER到防护域名甚或无效域名，A到内网地址等</li>
+<li>DNS suffix</li>
+<li>DNS劫持结果，黑产＋你熟悉的G／F／W</li>
+<li>各种异常：互联网是程序员写出来的，有程序员的地方就会有BUG，举个栗子：有些域名做防护，会将请求的域名CNAME到一个随机子域名，比如把example.com CNAME 到 aaaabbbbcccc.example.com，后续根据客户端有没有请求该子域名，来判断客户端是不是正常。如果有了该子域名的请求，则认为客户端是真实的，再将 aaaabbbbcccc.example.com CNAME 回真正的地址，实现正常请求。但是现实中，实现的方法以及判读逻辑可能有问题，导致子域名 aaaabbbbcccc.example.com 的请求过来，又一次被CNAME到更深层级的子域名，比如 ddddeeeeffff.aaaabbbbcccc.example.com, 又要进行一次判断，如此往复。因此，我们能看到一个 ping-pang 的DNS请求，请求的域名越来越长，包越来越大，直到超出 DNS 域名规范的限制。这个过程，防护设备不但没有起到防护的作用，甚或间接的造成了DDoS攻击，整个请求过程的域名都是我们要过滤掉的。</li>
+</ul>
+<p>上面这一坨，每个点拿出来想做好，都可能是一项烦耗的工程。这些过滤，依赖于右路实时异常检测的结果，需要实时监测到这些异常，然后实时通知 Dynamic Filter过滤掉。这对实时异常检测的要求比较高。当然，这部分工作完全可以在最终入库前做，将入库时间延后，等各种异常汇集后再做，但是这样，对应的业务白画像的DB White也就不是实时可用的了，这个可以根据自己的需求权衡。</p>
+<p>而且，实时异常检测的时候，不可避免会有漏判误判，最下方的 Off-Line Analysis 的产出是立足于黑白灰全局数据的安全分析，也是定期复盘，一要纠正数据，而要提供更多的模型及规则给实时异常检测，形成一个 检测-过滤-验证-检测 的环路，不断优化模型，精细梳理规则，以期实现一个精准度不断提高的PDNS白画像。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://cybatk.com/2017/04/27/mongo-find-count/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1703,137 +1859,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2016/01/14/ddos-backbone-vs-border/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="YANG XU">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/touxiang.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="CYBerATtacK">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2016/01/14/ddos-backbone-vs-border/" itemprop="url">
-                  DDoS检测 - 骨干网与企业安全边界的差异
-                </a>
-              
-            
-          </h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-01-14T21:52:33+08:00">
-                2016-01-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>当前我们在做骨干网的DDoS实时检测，用以积累我们security visibility的能力。<br>同样是DDoS检测，在大网上来看和在防护安全边界来来，情况差异比较大，总结一下备忘。</p>
-<h1 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h1><p>检测基于数据，先说数据差异。</p>
-<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>安全边界，几乎可以做全流量分析，而大网上，可获取的几乎只能是流量摘要数据。因此，安全边界可以做更细致的单包深度检测，或者会话重组找渗透，但是大网只能看统计特征。</p>
-<h2 id="Point-View-vs-Scape-View"><a href="#Point-View-vs-Scape-View" class="headerlink" title="Point View vs. Scape View"></a>Point View vs. Scape View</h2><p>企业看到针对自己这个点的数据，大网看的是整体。设定两个数量集规模M和N，M比N大2个数量级，安全边界看到的是M：N， 大网看到的是M：M。<br>因此，大网背景流量大很多，意味着噪音大很多，意味着很多即便是大攻击，但是淹没在更巨大的背景流量下，反而很小了，需要耗费更大的精力来定位分析。<br>但是大网的大背景流量在某些场景下也有优势，比如企业很难发现或者确认scanner，但是大网上由于自己的Scape View，确认Scanner反而简单。</p>
-<h2 id="Full-Data-vs-Partial-Data"><a href="#Full-Data-vs-Partial-Data" class="headerlink" title="Full Data vs. Partial Data"></a>Full Data vs. Partial Data</h2><p>企业安全边界对应Full Data很容易理解。大网上，Partial Data有两层含义：<br>1, 大网上看到针对一个IP的流量，只能是整体数据的一部分：很多我们采集点之外的数据我们是看不到的，更多大网采集点层级之下的数据我们也是看不到的<br>2，是进出数据的一边：在大网骨干路由上，来去的流量不一定是经过同一个地方，因此大网上某个点常常会看到单向流量</p>
-<p>由于DDoS攻击流量基本上是全网窜，因此1带来的困难只是检测精细化的工程难度，2带来的更难处理，因为单向流量直接影响到了判定，看到一个IP只接受RST包，怎么确定这是RST Flood还是它是被Spoofed IP来SYN_ACK Flood攻击别人呢？</p>
-<h1 id="业务"><a href="#业务" class="headerlink" title="业务"></a>业务</h1><h2 id="Manage-Object／管理对象／资源／业务对象"><a href="#Manage-Object／管理对象／资源／业务对象" class="headerlink" title="Manage Object／管理对象／资源／业务对象"></a>Manage Object／管理对象／资源／业务对象</h2><p>企业都会有自己的资源／业务梳理，大网是没有的，我们当前可用的只有PDNS带给我们的domain-IP的映射关系，但是由于有CDN的存在，这个也存在部分问题。</p>
-<h2 id="Baseline"><a href="#Baseline" class="headerlink" title="Baseline"></a>Baseline</h2><p>企业既然可以梳理出MO，那也就可以根据MO来确定一个baseline，流量大小的也好，访问态势的也好，总有能力刻画一个常态的profile，但是大网监控，第一不可能有一个可梳理的baselien，第二，大网上异常太多，业务故障／业务调整／网络异常／攻击等等情况时刻都在发生，就算有baseline，那超出baseline部分的异常，仍旧是多到难以处理，所以有了baseline也要丢掉，直接去看数据中的强特征更靠谱。</p>
-<h1 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h1><h2 id="看到-vs-防住"><a href="#看到-vs-防住" class="headerlink" title="看到 vs. 防住"></a>看到 vs. 防住</h2><p>企业安全防护，工作的衡量标准就是自己保护对象的可用性，当攻击发生时能不能防住。<br>既然以保护对象的可用性作为最终衡量标准，那基本上都是抓大放小，告警基线可以根据自己资源能力来调整一个比较高的阈值，小攻击，探测性的攻击，能忽略就忽略，毕竟这些事情的处理也是要耗费安全运营的资源，大到可能影响业务的攻击一旦发生，那势必立即响应，以求安全。</p>
-<p>我们做大网上的监控，更多的是想“看到”，大小都想看到。而且，更普遍的情况是，我们看到的小，只是因为我们的数据不全，只是在我们可见的范围内小，而实际攻击并不小。因此，我们看攻击没有“大小”的区别，只有“看到和看不到”的区别，我们要尽可能的“全看到”。</p>
-<p>于此带来的一个最典型的工程处理方法上的区别就是，安全边界的TopN更重要，而大网监控的SpikeRate更重要，TopN突出的是当前面对的最大的是谁，SpikeRate表达的是变化最大的是谁。</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -1883,7 +1908,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">15</span>
+                <span class="site-state-item-count">16</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
