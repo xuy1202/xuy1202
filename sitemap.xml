@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://cybatk.com/about/resume.zh.html</loc>
+    
+    <lastmod>2017-06-30T03:33:38.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://cybatk.com/2017/05/26/pdns-white/</loc>
     
     <lastmod>2017-05-27T12:04:42.000Z</lastmod>
@@ -33,13 +40,6 @@
     <loc>http://cybatk.com/2017/04/27/mongo-find-count/</loc>
     
     <lastmod>2017-04-27T10:23:42.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://cybatk.com/about/resume.zh.html</loc>
-    
-    <lastmod>2017-04-14T05:27:56.000Z</lastmod>
     
   </url>
   
