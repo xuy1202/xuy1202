@@ -129,7 +129,7 @@ ddosmon
 Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。
 一条原始netflow数据形如：
 12018-03-12_10:56:18 1       TCP     111.7">
-<meta property="og:updated_time" content="2019-04-17T10:46:14.831Z">
+<meta property="og:updated_time" content="2019-04-17T10:50:31.644Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Backbone Network Traffic Anomaly Detection">
 <meta name="twitter:description" content="概述目的通过持续对流量数据的监测，不断丰富及提取合适的流量特征，以实时检测流量异常几种主要结果：
@@ -519,7 +519,6 @@ Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测�
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">1   属性：编号为2024的规则是用来匹配“udp@attack@amp_flood_target”事件</div><div class="line">2   条件：proto=17 UDP 协议</div><div class="line">3   条件：短时间周期内（1小时）流量spike 15倍以上</div><div class="line">4   条件：长时间周期内（1天）流量spike 15倍以上</div><div class="line">5   条件：来源端口比较聚集</div><div class="line">6   条件：来源端口top1是常见反射放大端口其一</div><div class="line">7   条件：来源端口top2是常见反射放大端口其一</div><div class="line">8   条件：来源包大小top是1000字节以上的大包</div><div class="line">9   条件：来源包大小的均值是600以上</div></pre></td></tr></table></figure>
 <h2 id="规则集"><a href="#规则集" class="headerlink" title="规则集"></a>规则集</h2><p>如上一条规则只能捕获一种或几种类型的“udp@attack@amp_flood_target”事件，但是不能捕获所有的“udp@attack@amp_flood_target”事件。同一种事件，在不同的场景下可能有不同的数据形态，在不同的阶段可能有不同的数据形态，因此针对某一特定事件，我们需要多条规则来覆盖所有的场景，以期达到更高的检出率。多条规则之间是“或”的关系，一次匹配，是匹配所有可疑的规则，只要能命中其中任意一条，我们便可判定为真。</p>
 <p>同时，存在某些场景下，不同的事件类型但是数据形态非常相似，只有细微的差别，这时候为了规则运维的方便，有一个priority属性，一条数据匹配到多个规则，只会取priority最大的结果。</p>
-<p>全规则集参见“source_code/dat/pivot_attack.txt”。</p>
 <h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p>整体数据流程可以简单的分为“分发 - 汇集 - 匹配 - 输出”四个步骤。</p>
 <ul>
 <li>分发：接受不同采集节点的数据，按照一定规则hash(ip)的方式分发数据到汇集的节点</li>
