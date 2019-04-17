@@ -129,8 +129,7 @@ ddosmon
 Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。
 一条原始netflow数据形如：
 12018-03-12_10:56:18 1       TCP     111.7">
-<meta property="og:image" content="https://note.youdao.com/yws/public/resource/b7c5da8c423199dc4ecb56d90ae72316/xmlnote/2C5872D4DEF0494D8A28373A7F9BA466/4359">
-<meta property="og:updated_time" content="2018-03-12T16:44:01.503Z">
+<meta property="og:updated_time" content="2019-04-17T10:46:14.831Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Backbone Network Traffic Anomaly Detection">
 <meta name="twitter:description" content="概述目的通过持续对流量数据的监测，不断丰富及提取合适的流量特征，以实时检测流量异常几种主要结果：
@@ -142,7 +141,6 @@ ddosmon
 Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。
 一条原始netflow数据形如：
 12018-03-12_10:56:18 1       TCP     111.7">
-<meta name="twitter:image" content="https://note.youdao.com/yws/public/resource/b7c5da8c423199dc4ecb56d90ae72316/xmlnote/2C5872D4DEF0494D8A28373A7F9BA466/4359">
 
 
 
@@ -523,52 +521,30 @@ Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测�
 <p>同时，存在某些场景下，不同的事件类型但是数据形态非常相似，只有细微的差别，这时候为了规则运维的方便，有一个priority属性，一条数据匹配到多个规则，只会取priority最大的结果。</p>
 <p>全规则集参见“source_code/dat/pivot_attack.txt”。</p>
 <h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p>整体数据流程可以简单的分为“分发 - 汇集 - 匹配 - 输出”四个步骤。</p>
-<p>整体流程结构图如下：</p>
-<p><img src="https://note.youdao.com/yws/public/resource/b7c5da8c423199dc4ecb56d90ae72316/xmlnote/2C5872D4DEF0494D8A28373A7F9BA466/4359" alt="SdanfStructure"></p>
 <ul>
 <li>分发：接受不同采集节点的数据，按照一定规则hash(ip)的方式分发数据到汇集的节点</li>
 <li>汇集：持续累积给定时间窗口的数据，整理为上述的模型数据，并依照上述模型中的触发条件，将数据POP出来，给到后续匹配流程做检测</li>
 <li>匹配：接受数据，根据给定的规则，检测具体的事件</li>
 <li>输出：最终结果事件的输出记录</li>
 </ul>
-<h2 id="原始数据分发"><a href="#原始数据分发" class="headerlink" title="原始数据分发"></a>原始数据分发</h2><p>对应的进程为dnfbuk.exe，接受和发送均为client mode。</p>
-<p>我们的模型是要针对某一个IP采集进/出两个方向的流量，而一个IP要么出现在src的位置，要么出现在dst的位置，这就意味着，对于一个 A-&gt;B 的flow，我们既要将其发送给A对应的汇集点，也要将其发送给B对应的汇集点。</p>
-<h2 id="原始数据聚合"><a href="#原始数据聚合" class="headerlink" title="原始数据聚合"></a>原始数据聚合</h2><p>对应的进程为dnfetl.exe，接受和发送均为server mode。</p>
-<p>聚合的过程是根据数据到达的时间实时进行的，几个要点：</p>
+<h2 id="原始数据分发"><a href="#原始数据分发" class="headerlink" title="原始数据分发"></a>原始数据分发</h2><p>我们的模型是要针对某一个IP采集进/出两个方向的流量，而一个IP要么出现在src的位置，要么出现在dst的位置，这就意味着，对于一个 A-&gt;B 的flow，我们既要将其发送给A对应的汇集点，也要将其发送给B对应的汇集点。</p>
+<h2 id="原始数据聚合"><a href="#原始数据聚合" class="headerlink" title="原始数据聚合"></a>原始数据聚合</h2><p>聚合的过程是根据数据到达的时间实时进行的，几个要点：</p>
 <ul>
 <li>默认聚合过程是汇聚到IP-Proto-Port级别，而IP/IP-Proto级别的数据，是在STWPop的时候动态计算的，这样可以节省内存资源消耗</li>
 <li>由于有AETWPop的存在，所以一个固定时间窗口过去后，“即没有多到可以直接判断，又没有少到可以忽略的”这部分数据需要留存下来参与下一次的聚合过程</li>
 <li>由于数据分布不均的原因，同一个聚合点缓存数据的Flush实际有两个触发条件，一个是配置的TimeWindow的大小，一个是聚合key的最大值。正常情况下都是前者起作用，但后者可以保证即便某个点数据爆炸，系统还能保持稳定运行</li>
 </ul>
-<h2 id="模型数据匹配"><a href="#模型数据匹配" class="headerlink" title="模型数据匹配"></a>模型数据匹配</h2><p>对应的进程为dnfeng.exe，接受和发送均为client mode。</p>
-<p>匹配过程是一个 “white-black-gray” 串联匹配过程</p>
+<h2 id="模型数据匹配"><a href="#模型数据匹配" class="headerlink" title="模型数据匹配"></a>模型数据匹配</h2><p>匹配过程是一个 “white-black-gray” 串联匹配过程</p>
 <ul>
 <li>white: 用以初步过滤一些明显的不管新的数据</li>
 <li>black: 用以匹配出我们已知的恶意事件</li>
 <li>gray: 对white/black以外的数据进行历史流量建baseline，然后找出可疑的异常</li>
 </ul>
-<p>三个节点都是可选的，当前white用来过滤小流量不关心的数据，black是主体，gray还没有启用。</p>
-<h2 id="结果数据输出"><a href="#结果数据输出" class="headerlink" title="结果数据输出"></a>结果数据输出</h2><p>对应的进程为dnfhub.exe，接受和发送均为server mode。</p>
-<p>dnfeng匹配的结果会主动地pub给dnfhub，然后dnfhub会原封不动得pub在自己的server端口，主要是为了在不同的网络环境下做中转/负载均衡/热备。</p>
-<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><h2 id="单机"><a href="#单机" class="headerlink" title="单机"></a>单机</h2><p>如果原始netflow流量平均在5w/s以内，单机可以处理。单机部署可以只使用上述蓝线中的部分，一个dnfbuk接原始数据，后续流程处理完毕后，一个dnfhub发布所有结果数据。</p>
-<p>具体可以参照172.24.10.24测试环境上的部署。</p>
-<h2 id="多机"><a href="#多机" class="headerlink" title="多机"></a>多机</h2><p>如果原始netflow数据比较多，需要多机协作，dnfbuk/dnfetl/dnfeng/dnfhub的个数都有配置参数可以调整：</p>
-<ul>
-<li>原始数据接入点及其网络等资源限制决定了dnfbuk</li>
-<li>原始数据的分布是否均匀以及是否频繁变化，决定了dnfetl</li>
-<li>规则集数目以及耗时规则决定dnfeng</li>
-<li>最终入库方式以及后续数据处理逻辑决定dnfhub</li>
-</ul>
-<p>具体可以参照线上真实环境上的部署。</p>
-<h1 id="持续运营"><a href="#持续运营" class="headerlink" title="持续运营"></a>持续运营</h1><p>数据入库ES后，根据所有可用的属性key，以及产生的事件types，可以过滤出数据梳理，看有那些漏报/误报，进一步调整规则。</p>
-<p>dnfetl 和 dnfhub 都是以server mode吐数据的，区别是dnfetl吐出的数据是没有经过规则匹配的模型数据，而dnfhub是经过规则匹配确定的结果事件，因此：</p>
-<ul>
-<li>我们可以从dnfetl额外接一份数据，然后测试我们的新规则。测试后确定的新规则，可以直接覆盖dnfeng的原始规则配置，dnfeng会动态自动更新。</li>
-<li>我们可以从dbfhub额外接一份结果数据，引入到我们的新流程，或者测试入库等逻辑。</li>
-</ul>
+<p>三个节点都是可选的，动态配置。</p>
+<h2 id="结果数据输出"><a href="#结果数据输出" class="headerlink" title="结果数据输出"></a>结果数据输出</h2><p>略。</p>
 <h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="规则可用属性"><a href="#规则可用属性" class="headerlink" title="规则可用属性"></a>规则可用属性</h2><ul>
 <li>tag: 事件类型，基本为proto@event_type@detailed_type 格式</li>
-<li>index: 规则组，如果想针对不同的数据过不同的规则集，需要修改源代码支持，当前都是0</li>
+<li>index: 规则组，如果想针对不同的数据过不同的规则集</li>
 <li>priority: 优先级，规则默认优先级是0，如果确认一条规则最精确最准，可以设置一个高优先级，这样会覆盖其他规则的匹配</li>
 </ul>
 <h2 id="规则可用条件"><a href="#规则可用条件" class="headerlink" title="规则可用条件"></a>规则可用条件</h2><p>大部分规则都符合“规则-规则说明”中的格式，部分特殊的加了额外说明</p>
@@ -597,72 +573,7 @@ Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测�
 <li>rate_io_avgs_pkgsize：    进/出包大小比率</li>
 <li>tops_nzport_io_equal：    进/出流量中最大的非0端口是否一致</li>
 <li></li>
-<li>diss_self_as_dst_port</li>
-<li>diss_self_as_src_port</li>
-<li>lens_self_as_dst_port</li>
-<li>avgs_in_duration</li>
-<li>avgs_in_pkgnums</li>
-<li>avgs_in_pkgsize</li>
-<li>avgs_ot_duration</li>
-<li>avgs_ot_pkgnums</li>
-<li>avgs_ot_pkgsize</li>
-<li>diss_in_ip_b</li>
-<li>diss_in_ip_c</li>
-<li>diss_in_ipv4</li>
-<li>diss_in_peer</li>
-<li>diss_in_pkgnums</li>
-<li>diss_in_pkgsize</li>
-<li>diss_in_port</li>
-<li>diss_in_tf</li>
-<li>diss_ot_ip_b</li>
-<li>diss_ot_ip_c</li>
-<li>diss_ot_ipv4</li>
-<li>diss_ot_peer</li>
-<li>diss_ot_pkgnums</li>
-<li>diss_ot_pkgsize</li>
-<li>diss_ot_port</li>
-<li>diss_ot_tf</li>
-<li>lens_in_duration</li>
-<li>lens_in_ipv4</li>
-<li>lens_in_pkgnums</li>
-<li>lens_in_port</li>
-<li>lens_ot_duration</li>
-<li>lens_ot_ipv4</li>
-<li>lens_ot_pkgnums</li>
-<li>lens_ot_port</li>
-<li>rate_in_ack</li>
-<li>rate_in_fin</li>
-<li>rate_in_nul</li>
-<li>rate_in_psh</li>
-<li>rate_in_rst</li>
-<li>rate_in_syn</li>
-<li>rate_in_urg</li>
-<li>rate_ot_ack</li>
-<li>rate_ot_fin</li>
-<li>rate_ot_nul</li>
-<li>rate_ot_psh</li>
-<li>rate_ot_rst</li>
-<li>rate_ot_syn</li>
-<li>rate_ot_urg</li>
-<li>sequ_ot_ip_b</li>
-<li>sequ_ot_ip_c</li>
-<li>sequ_ot_ipv4</li>
-<li>span_in_pkgsize</li>
-<li>span_ot_pkgsize</li>
-<li>top2_in_port</li>
-<li>top2_ot_port</li>
-<li>tops_self_as_src_port</li>
-<li>top2_self_as_src_port</li>
-<li>tops_in_duration</li>
-<li>tops_in_pkgnums</li>
-<li>tops_in_pkgsize</li>
-<li>tops_in_port</li>
-<li>tops_ot_duration</li>
-<li>tops_ot_pkgnums</li>
-<li>tops_ot_pkgsize</li>
-<li>tops_ot_port</li>
-<li>tops_self_as_dst_port</li>
-<li>tops_self_as_src_port</li>
+<li>此处省略100条条件</li>
 </ul>
 
       
@@ -909,7 +820,7 @@ Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测�
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#目的"><span class="nav-number">1.1.</span> <span class="nav-text">目的</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Pivot模型"><span class="nav-number">2.</span> <span class="nav-text">Pivot模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#双向"><span class="nav-number">2.1.</span> <span class="nav-text">双向</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多层"><span class="nav-number">2.2.</span> <span class="nav-text">多层</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多触发"><span class="nav-number">2.3.</span> <span class="nav-text">多触发</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#规则"><span class="nav-number">3.</span> <span class="nav-text">规则</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#特征概述"><span class="nav-number">3.1.</span> <span class="nav-text">特征概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则条件说明"><span class="nav-number">3.2.</span> <span class="nav-text">规则条件说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DirectionPosition"><span class="nav-number">3.2.1.</span> <span class="nav-text">DirectionPosition</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Item基本概念："><span class="nav-number">3.2.2.</span> <span class="nav-text">Item基本概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Calc基本概念："><span class="nav-number">3.2.3.</span> <span class="nav-text">Calc基本概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#举例："><span class="nav-number">3.2.4.</span> <span class="nav-text">举例：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则实例"><span class="nav-number">3.3.</span> <span class="nav-text">规则实例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则集"><span class="nav-number">3.4.</span> <span class="nav-text">规则集</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#架构"><span class="nav-number">4.</span> <span class="nav-text">架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原始数据分发"><span class="nav-number">4.1.</span> <span class="nav-text">原始数据分发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原始数据聚合"><span class="nav-number">4.2.</span> <span class="nav-text">原始数据聚合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模型数据匹配"><span class="nav-number">4.3.</span> <span class="nav-text">模型数据匹配</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结果数据输出"><span class="nav-number">4.4.</span> <span class="nav-text">结果数据输出</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#部署"><span class="nav-number">5.</span> <span class="nav-text">部署</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#单机"><span class="nav-number">5.1.</span> <span class="nav-text">单机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多机"><span class="nav-number">5.2.</span> <span class="nav-text">多机</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#持续运营"><span class="nav-number">6.</span> <span class="nav-text">持续运营</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#附录"><span class="nav-number">7.</span> <span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#规则可用属性"><span class="nav-number">7.1.</span> <span class="nav-text">规则可用属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则可用条件"><span class="nav-number">7.2.</span> <span class="nav-text">规则可用条件</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#目的"><span class="nav-number">1.1.</span> <span class="nav-text">目的</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Pivot模型"><span class="nav-number">2.</span> <span class="nav-text">Pivot模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#双向"><span class="nav-number">2.1.</span> <span class="nav-text">双向</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多层"><span class="nav-number">2.2.</span> <span class="nav-text">多层</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多触发"><span class="nav-number">2.3.</span> <span class="nav-text">多触发</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#规则"><span class="nav-number">3.</span> <span class="nav-text">规则</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#特征概述"><span class="nav-number">3.1.</span> <span class="nav-text">特征概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则条件说明"><span class="nav-number">3.2.</span> <span class="nav-text">规则条件说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DirectionPosition"><span class="nav-number">3.2.1.</span> <span class="nav-text">DirectionPosition</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Item基本概念："><span class="nav-number">3.2.2.</span> <span class="nav-text">Item基本概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Calc基本概念："><span class="nav-number">3.2.3.</span> <span class="nav-text">Calc基本概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#举例："><span class="nav-number">3.2.4.</span> <span class="nav-text">举例：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则实例"><span class="nav-number">3.3.</span> <span class="nav-text">规则实例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则集"><span class="nav-number">3.4.</span> <span class="nav-text">规则集</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#架构"><span class="nav-number">4.</span> <span class="nav-text">架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原始数据分发"><span class="nav-number">4.1.</span> <span class="nav-text">原始数据分发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原始数据聚合"><span class="nav-number">4.2.</span> <span class="nav-text">原始数据聚合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模型数据匹配"><span class="nav-number">4.3.</span> <span class="nav-text">模型数据匹配</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结果数据输出"><span class="nav-number">4.4.</span> <span class="nav-text">结果数据输出</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#附录"><span class="nav-number">5.</span> <span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#规则可用属性"><span class="nav-number">5.1.</span> <span class="nav-text">规则可用属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则可用条件"><span class="nav-number">5.2.</span> <span class="nav-text">规则可用条件</span></a></li></ol></li></ol></div>
             
 
           </div>
