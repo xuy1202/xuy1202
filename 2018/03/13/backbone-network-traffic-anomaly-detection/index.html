@@ -1,0 +1,1220 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Oswald:300,300italic,400,400italic,700,700italic|Kelly+Slab:300,300italic,400,400italic,700,700italic|Kelly+Slab:300,300italic,400,400italic,700,700italic|Share+Tech+Mono:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="backbone network,ddos,scanner," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="CYBerATtacK" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="概述目的通过持续对流量数据的监测，不断丰富及提取合适的流量特征，以实时检测流量异常几种主要结果：
+
+scanmon
+ddosmon
+暴力破解/垃圾邮件服务器等
+
+Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。
+一条原始netflow数据形如：
+12018-03-12_10:56:18 1       TCP     111.7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Backbone Network Traffic Anomaly Detection">
+<meta property="og:url" content="http://cybatk.com/2018/03/13/backbone-network-traffic-anomaly-detection/index.html">
+<meta property="og:site_name" content="CYBerATtacK">
+<meta property="og:description" content="概述目的通过持续对流量数据的监测，不断丰富及提取合适的流量特征，以实时检测流量异常几种主要结果：
+
+scanmon
+ddosmon
+暴力破解/垃圾邮件服务器等
+
+Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。
+一条原始netflow数据形如：
+12018-03-12_10:56:18 1       TCP     111.7">
+<meta property="og:image" content="https://note.youdao.com/yws/public/resource/b7c5da8c423199dc4ecb56d90ae72316/xmlnote/2C5872D4DEF0494D8A28373A7F9BA466/4359">
+<meta property="og:updated_time" content="2018-03-12T16:44:01.503Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Backbone Network Traffic Anomaly Detection">
+<meta name="twitter:description" content="概述目的通过持续对流量数据的监测，不断丰富及提取合适的流量特征，以实时检测流量异常几种主要结果：
+
+scanmon
+ddosmon
+暴力破解/垃圾邮件服务器等
+
+Pivot模型netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。
+一条原始netflow数据形如：
+12018-03-12_10:56:18 1       TCP     111.7">
+<meta name="twitter:image" content="https://note.youdao.com/yws/public/resource/b7c5da8c423199dc4ecb56d90ae72316/xmlnote/2C5872D4DEF0494D8A28373A7F9BA466/4359">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 'undefined',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://cybatk.com/2018/03/13/backbone-network-traffic-anomaly-detection/"/>
+
+
+
+
+
+  <title> Backbone Network Traffic Anomaly Detection | CYBerATtacK </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-93514438-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">CYBerATtacK</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">cyber security related things</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocapitalize="off" autocomplete="off" autocorrect="off"
+             placeholder="Searching..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://cybatk.com/2018/03/13/backbone-network-traffic-anomaly-detection/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="YANG XU">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CYBerATtacK">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+            
+            
+              
+                Backbone Network Traffic Anomaly Detection
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-03-13T00:07:07+08:00">
+                2018-03-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            <!--noindex-->
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/13/backbone-network-traffic-anomaly-detection/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count hc-comment-count" data-xid="2018/03/13/backbone-network-traffic-anomaly-detection/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+              <!--/noindex-->
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><p>通过持续对流量数据的监测，不断丰富及提取合适的流量特征，以实时检测流量异常<br>几种主要结果：</p>
+<ul>
+<li>scanmon</li>
+<li>ddosmon</li>
+<li>暴力破解/垃圾邮件服务器等</li>
+</ul>
+<h1 id="Pivot模型"><a href="#Pivot模型" class="headerlink" title="Pivot模型"></a>Pivot模型</h1><p>netflow数据是流量的摘要数据，因此通过netflow来检测流量异常也就只能通过摘要统计来提取特征。</p>
+<p>一条原始netflow数据形如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">2018-03-12_10:56:18 1       TCP     111.75.213.6:80 -&gt;  220.160.22.245:49948    ...PA...	0	5	6888</div></pre></td></tr></table></figure>
+<p>这样的数据，只有基本的发生时间，持续时长，来源/目的 的IP：端口等等基本信息。</p>
+<p>一般情况下，单条数据无法形成有效的事件鉴别特征，如果我们想深入观察某个IP的状况，我们需要累积一定时间窗口内的与该IP相关的所有数据来观察，比如针对目的IP 189.203.188.074，我们累积一段时间的来源流量可以得出如下统计数据：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">来源Flow总计：      95(in_fsum)</div><div class="line">来源Package总计：   95(in_psum)</div><div class="line">来源Bytes总计：     113474(in_bsum)</div><div class="line"></div><div class="line">来源包个数统计：    _size=1;_nums=63;1=63;(in_pkgnums)</div><div class="line">来源包大小统计：    _size=28;_nums=63;1500=29;1476=3;1158=2;1063=2;1057=2;847=2;23=2;44=1;1234=1;63=1;1155=1;(in_pkgsize)</div><div class="line">    </div><div class="line">来源IP统计：        _size=51;_nums=63;211.161.099.125=4;117.035.057.189=2;116.226.156.088=2;120.132.146.115=2;112.126.075.213=2;182.050.118.202=2;182.050.118.223=2;183.129.179.044=2;183.129.249.076=2;218.084.015.245=2;223.223.198.100=1;222.223.026.006=1;120.026.120.015=1;222.222.238.164=1;121.043.148.069=1;123.183.161.199=1;222.222.235.237=1;124.116.223.098=1;124.117.235.138=1;124.126.011.177=1;222.072.158.150=1;221.224.036.022=1;219.235.255.070=1;219.072.250.018=1;211.157.139.253=1;218.031.105.251=1;027.191.130.122=1;036.110.211.029=1;043.247.177.226=1;047.094.246.179=1;058.118.178.084=1;058.213.097.129=1;059.045.193.027=1;059.046.059.174=1;060.205.095.069=1;060.205.146.210=1;061.185.004.122=1;101.081.132.185=1;101.095.027.234=1;101.200.162.015=1;106.002.218.068=1;106.014.238.132=1;110.086.000.162=1;111.113.004.106=1;111.113.027.126=1;114.055.052.155=1;114.141.173.038=1;115.159.102.216=1;115.238.035.233=1;116.231.054.207=1;116.231.155.071=1;(in_ipv4)</div><div class="line">来源端口统计：      _size=2;_nums=63;0=33;53=30;(in_port)</div><div class="line"></div><div class="line">PS: </div><div class="line">    1，数值型数据相加</div><div class="line">    2，枚举型数据组织为count-map</div><div class="line">    3，枚举类型count-map前面的 _size表示后面的list总长度，也即为unique(list.keys()), _nums表示sum(list.value())</div></pre></td></tr></table></figure></p>
+<p>我们可以看到，来源IP比较分散，但是来源Port固定为53和碎片0端口，同时，很多包都是1500 MTU的满包状态，我们就有充足的信心来说，这是一个DNS反射放大攻击事件，是典型的大量的被利用的反射节点给受害者目的IP发送超过1500的大包导致的流量形态。</p>
+<h2 id="双向"><a href="#双向" class="headerlink" title="双向"></a>双向</h2><p>针对一个IP，我们要想观察它是否异常，我们就需要观察它进出两个方向的流量：</p>
+<ul>
+<li>如果是一个Scanner，可能一段时间内只看到它出去的流量，而看不到流向它的流量</li>
+<li>如果是一个被DDoS目标，可能一段时间内只看到它进入的流量，而看不到它出去的流量</li>
+</ul>
+<h2 id="多层"><a href="#多层" class="headerlink" title="多层"></a>多层</h2><p>同时针对一个IP，观察需要按照IP/Proto/Port来分层观察流量：</p>
+<ul>
+<li>一个IP上TCP 80端口是正常服务，但是被攻击的是90端口，如果不根据端口来区分观察流量可能会miss</li>
+<li>一个IP上TCP 80端口正常服务，但是被攻击的是UDP流量，如果不根据协议来区分观察流量可能会miss</li>
+</ul>
+<h2 id="多触发"><a href="#多触发" class="headerlink" title="多触发"></a>多触发</h2><p>一般情况下，聚合10分钟的数据，然后整理成所需的格式push到后续流程做检测就够了，但为了数据的时效性以及查全查准，一共有三种检测触发器：</p>
+<ul>
+<li>STWPop：STW for Sliding Time Window，固定时间窗口流量spike触发检测</li>
+<li>EarlyPop：一个IP一个时间窗口内最开始出现的部分流量</li>
+<li>AETWPop: AETW for Auto-Extend Time Window， 当一个固定时间窗口内流量太小，自动扩展更多个时间窗口的数据来触发检测</li>
+</ul>
+<h1 id="规则"><a href="#规则" class="headerlink" title="规则"></a>规则</h1><h2 id="特征概述"><a href="#特征概述" class="headerlink" title="特征概述"></a>特征概述</h2><p>根据我们上述“双向-多层-多触发”模型，任何一个规则条件都可以简单概括为如下：</p>
+<blockquote>
+<p>针对一个IP/IP-Proto/IP-Proto-Port，其：</p>
+<ul>
+<li>来源/目的</li>
+<li>IP/Proto/Port/Flow/PackageNum/PackageSize/Duration</li>
+<li>的unique/sum/dispersion/top</li>
+</ul>
+<p>是什么</p>
+</blockquote>
+<p>比如上面我们给出的UDP反射放大攻击的case，我们提到“来源IP比较分散，但是来源Port固定为53和碎片0端口”</p>
+<p>这里其实需要映射为三个“与关系”的条件：</p>
+<ul>
+<li>针对IP 189.203.188.074，其来源IP的dispersion介于[0-5]之间（这里的[0-5]是离散的数值表示）</li>
+<li>针对IP 189.203.188.074，其来源Port的Top1等于53</li>
+<li>针对IP 189.203.188.074，其来源Port的Top2等于0</li>
+</ul>
+<h2 id="规则条件说明"><a href="#规则条件说明" class="headerlink" title="规则条件说明"></a>规则条件说明</h2><p>规则条件基本上都是 Calc_DirectionORPosition_Item 的形式。</p>
+<h3 id="DirectionPosition"><a href="#DirectionPosition" class="headerlink" title="DirectionPosition"></a>DirectionPosition</h3><ul>
+<li>in: 进入的流量</li>
+<li>self_as_dst: 自身作为目的的流量</li>
+<li>self_as_src: 自身作为源的流量</li>
+<li>ot: 出去的流量</li>
+</ul>
+<p>比如如下5条流量：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">1.1.1.1:1111 -&gt; 2.2.2.2:2221</div><div class="line">1.1.1.1:1112 -&gt; 2.2.2.2:2222</div><div class="line">1.1.1.1:1113 -&gt; 2.2.2.2:2223</div><div class="line">2.2.2.2:2225 -&gt; 3.3.3.3:3331</div><div class="line">2.2.2.2:2226 -&gt; 3.3.3.3:3332</div></pre></td></tr></table></figure></p>
+<p>整理成我们的Pivot模型后，DirectionPosition的位置如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">            |&lt;--IP 2.2.2.2 Info--&gt;|</div><div class="line">            </div><div class="line">    in       self_as_dst|self_as_src    ot</div><div class="line"></div><div class="line">1.1.1.1:1111 -&gt;  2221:2.2.2.2</div><div class="line">1.1.1.1:1112 -&gt;  2222:2.2.2.2</div><div class="line">1.1.1.1:1113 -&gt;  2223:2.2.2.2</div><div class="line">                      2.2.2.2:2225 -&gt; 3.3.3.3:3331</div><div class="line">                      2.2.2.2:2226 -&gt; 3.3.3.3:3332</div></pre></td></tr></table></figure></p>
+<h3 id="Item基本概念："><a href="#Item基本概念：" class="headerlink" title="Item基本概念："></a>Item基本概念：</h3><ul>
+<li>duration: flow持续时长，一个5元组flow数据的持续时长</li>
+<li>pkgnums：一个flow中的package数，数字越大，说明同一个flow中传输的package越多</li>
+<li>pkgsize: 一个flow中的package的平均大小，数字越大说明同一个flow中传输的package越大</li>
+<li>peer： IP+Port是一个peer</li>
+<li>ipv4：IP</li>
+<li>ip_b：IP/16</li>
+<li>ip_c：IP/24</li>
+<li>port：port</li>
+<li>tf: TFlags整体</li>
+<li>fin/ack/syn/psh/rst/urg/nul: TFlags中对应的单独的一位</li>
+</ul>
+<p>所有枚举型都会被整理为ordered-count-map，类如{A:100, B:80, … N:1}，表示A出现100次，B出现80次，。。。 N出现1次，并且按照大小排序，Calc基本都是根据ordered-count-map的计算</p>
+<h3 id="Calc基本概念："><a href="#Calc基本概念：" class="headerlink" title="Calc基本概念："></a>Calc基本概念：</h3><ul>
+<li>lens：unique(ordered-count-map)</li>
+<li>diss：离散度，0-9999，数字越小说明越分散，5为比较分散，10为比较聚集，20以上为非常聚集。这个数字的step要根据现实流量的态势来调整</li>
+<li>tops: ordered-count-map的最大的key</li>
+<li>top2: ordered-count-map第二大的key</li>
+<li>avgs: ordered-count-map中value的均值，或者sum([k * v for k, v in ordered-count-map])/len(ordered-count-map)</li>
+<li>span: ordered-count-map中最大最小的key的跨度</li>
+<li>rate: 比率，往往是和TFlags结合来确定进出tflags的比率</li>
+</ul>
+<h3 id="举例："><a href="#举例：" class="headerlink" title="举例："></a>举例：</h3><ul>
+<li>lens_in_ipv4: 进入流量中ip的unique个数</li>
+<li>diss_ot_port: 出去流量中port的离散程度</li>
+<li>tops_in_port: 进入流量中最多的port</li>
+<li>avgs_ot_duration: 出去流量持续时长的均值</li>
+<li>rate_in_syn: 进入流量的SYN的比例</li>
+</ul>
+<h2 id="规则实例"><a href="#规则实例" class="headerlink" title="规则实例"></a>规则实例</h2><p>上面说的规则条件都是单个的条件，一条规则实际是多个条件的“与”结合</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">1   2024-&gt;attr tag udp@attack@amp_flood_target</div><div class="line">2   2024-&gt;cond prot equal 17</div><div class="line">3   2024-&gt;cond in_locals_spike in_span 15-999999999</div><div class="line">4   2024-&gt;cond in_global_spike in_span 15-999999999</div><div class="line">5   2024-&gt;cond diss_in_port in_span 9-999999999</div><div class="line">6   2024-&gt;cond tops_in_port equal 11211;27960;389;1701;69;111;520;19;1900;123;53;161;137;17;0</div><div class="line">7   2024-&gt;cond top2_in_port equal 11211;27960;389;1701;69;111;520;19;1900;123;53;161;137;17;0</div><div class="line">8   2024-&gt;cond tops_in_pkgsize in_span 1000-999999999</div><div class="line">9   2024-&gt;cond avgs_in_pkgsize in_span 600-999999999</div></pre></td></tr></table></figure>
+<p>上面是一条完整的规则，attr表示为规则属性，cond表示为规则条件，按行依次解释为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">1   属性：编号为2024的规则是用来匹配“udp@attack@amp_flood_target”事件</div><div class="line">2   条件：proto=17 UDP 协议</div><div class="line">3   条件：短时间周期内（1小时）流量spike 15倍以上</div><div class="line">4   条件：长时间周期内（1天）流量spike 15倍以上</div><div class="line">5   条件：来源端口比较聚集</div><div class="line">6   条件：来源端口top1是常见反射放大端口其一</div><div class="line">7   条件：来源端口top2是常见反射放大端口其一</div><div class="line">8   条件：来源包大小top是1000字节以上的大包</div><div class="line">9   条件：来源包大小的均值是600以上</div></pre></td></tr></table></figure>
+<h2 id="规则集"><a href="#规则集" class="headerlink" title="规则集"></a>规则集</h2><p>如上一条规则只能捕获一种或几种类型的“udp@attack@amp_flood_target”事件，但是不能捕获所有的“udp@attack@amp_flood_target”事件。同一种事件，在不同的场景下可能有不同的数据形态，在不同的阶段可能有不同的数据形态，因此针对某一特定事件，我们需要多条规则来覆盖所有的场景，以期达到更高的检出率。多条规则之间是“或”的关系，一次匹配，是匹配所有可疑的规则，只要能命中其中任意一条，我们便可判定为真。</p>
+<p>同时，存在某些场景下，不同的事件类型但是数据形态非常相似，只有细微的差别，这时候为了规则运维的方便，有一个priority属性，一条数据匹配到多个规则，只会取priority最大的结果。</p>
+<p>全规则集参见“source_code/dat/pivot_attack.txt”。</p>
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p>整体数据流程可以简单的分为“分发 - 汇集 - 匹配 - 输出”四个步骤。</p>
+<p>整体流程结构图如下：</p>
+<p><img src="https://note.youdao.com/yws/public/resource/b7c5da8c423199dc4ecb56d90ae72316/xmlnote/2C5872D4DEF0494D8A28373A7F9BA466/4359" alt="SdanfStructure"></p>
+<ul>
+<li>分发：接受不同采集节点的数据，按照一定规则hash(ip)的方式分发数据到汇集的节点</li>
+<li>汇集：持续累积给定时间窗口的数据，整理为上述的模型数据，并依照上述模型中的触发条件，将数据POP出来，给到后续匹配流程做检测</li>
+<li>匹配：接受数据，根据给定的规则，检测具体的事件</li>
+<li>输出：最终结果事件的输出记录</li>
+</ul>
+<h2 id="原始数据分发"><a href="#原始数据分发" class="headerlink" title="原始数据分发"></a>原始数据分发</h2><p>对应的进程为dnfbuk.exe，接受和发送均为client mode。</p>
+<p>我们的模型是要针对某一个IP采集进/出两个方向的流量，而一个IP要么出现在src的位置，要么出现在dst的位置，这就意味着，对于一个 A-&gt;B 的flow，我们既要将其发送给A对应的汇集点，也要将其发送给B对应的汇集点。</p>
+<h2 id="原始数据聚合"><a href="#原始数据聚合" class="headerlink" title="原始数据聚合"></a>原始数据聚合</h2><p>对应的进程为dnfetl.exe，接受和发送均为server mode。</p>
+<p>聚合的过程是根据数据到达的时间实时进行的，几个要点：</p>
+<ul>
+<li>默认聚合过程是汇聚到IP-Proto-Port级别，而IP/IP-Proto级别的数据，是在STWPop的时候动态计算的，这样可以节省内存资源消耗</li>
+<li>由于有AETWPop的存在，所以一个固定时间窗口过去后，“即没有多到可以直接判断，又没有少到可以忽略的”这部分数据需要留存下来参与下一次的聚合过程</li>
+<li>由于数据分布不均的原因，同一个聚合点缓存数据的Flush实际有两个触发条件，一个是配置的TimeWindow的大小，一个是聚合key的最大值。正常情况下都是前者起作用，但后者可以保证即便某个点数据爆炸，系统还能保持稳定运行</li>
+</ul>
+<h2 id="模型数据匹配"><a href="#模型数据匹配" class="headerlink" title="模型数据匹配"></a>模型数据匹配</h2><p>对应的进程为dnfeng.exe，接受和发送均为client mode。</p>
+<p>匹配过程是一个 “white-black-gray” 串联匹配过程</p>
+<ul>
+<li>white: 用以初步过滤一些明显的不管新的数据</li>
+<li>black: 用以匹配出我们已知的恶意事件</li>
+<li>gray: 对white/black以外的数据进行历史流量建baseline，然后找出可疑的异常</li>
+</ul>
+<p>三个节点都是可选的，当前white用来过滤小流量不关心的数据，black是主体，gray还没有启用。</p>
+<h2 id="结果数据输出"><a href="#结果数据输出" class="headerlink" title="结果数据输出"></a>结果数据输出</h2><p>对应的进程为dnfhub.exe，接受和发送均为server mode。</p>
+<p>dnfeng匹配的结果会主动地pub给dnfhub，然后dnfhub会原封不动得pub在自己的server端口，主要是为了在不同的网络环境下做中转/负载均衡/热备。</p>
+<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><h2 id="单机"><a href="#单机" class="headerlink" title="单机"></a>单机</h2><p>如果原始netflow流量平均在5w/s以内，单机可以处理。单机部署可以只使用上述蓝线中的部分，一个dnfbuk接原始数据，后续流程处理完毕后，一个dnfhub发布所有结果数据。</p>
+<p>具体可以参照172.24.10.24测试环境上的部署。</p>
+<h2 id="多机"><a href="#多机" class="headerlink" title="多机"></a>多机</h2><p>如果原始netflow数据比较多，需要多机协作，dnfbuk/dnfetl/dnfeng/dnfhub的个数都有配置参数可以调整：</p>
+<ul>
+<li>原始数据接入点及其网络等资源限制决定了dnfbuk</li>
+<li>原始数据的分布是否均匀以及是否频繁变化，决定了dnfetl</li>
+<li>规则集数目以及耗时规则决定dnfeng</li>
+<li>最终入库方式以及后续数据处理逻辑决定dnfhub</li>
+</ul>
+<p>具体可以参照线上真实环境上的部署。</p>
+<h1 id="持续运营"><a href="#持续运营" class="headerlink" title="持续运营"></a>持续运营</h1><p>数据入库ES后，根据所有可用的属性key，以及产生的事件types，可以过滤出数据梳理，看有那些漏报/误报，进一步调整规则。</p>
+<p>dnfetl 和 dnfhub 都是以server mode吐数据的，区别是dnfetl吐出的数据是没有经过规则匹配的模型数据，而dnfhub是经过规则匹配确定的结果事件，因此：</p>
+<ul>
+<li>我们可以从dnfetl额外接一份数据，然后测试我们的新规则。测试后确定的新规则，可以直接覆盖dnfeng的原始规则配置，dnfeng会动态自动更新。</li>
+<li>我们可以从dbfhub额外接一份结果数据，引入到我们的新流程，或者测试入库等逻辑。</li>
+</ul>
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="规则可用属性"><a href="#规则可用属性" class="headerlink" title="规则可用属性"></a>规则可用属性</h2><ul>
+<li>tag: 事件类型，基本为proto@event_type@detailed_type 格式</li>
+<li>index: 规则组，如果想针对不同的数据过不同的规则集，需要修改源代码支持，当前都是0</li>
+<li>priority: 优先级，规则默认优先级是0，如果确认一条规则最精确最准，可以设置一个高优先级，这样会覆盖其他规则的匹配</li>
+</ul>
+<h2 id="规则可用条件"><a href="#规则可用条件" class="headerlink" title="规则可用条件"></a>规则可用条件</h2><p>大部分规则都符合“规则-规则说明”中的格式，部分特殊的加了额外说明</p>
+<ul>
+<li>accu:         数据聚合级别，3是IP-PROTO-PORT，2是IP-PROTO，1是IP</li>
+<li>prot:         protocol 协议</li>
+<li>port：        端口</li>
+<li>proc_step：   处理阶段，1是STWPop和AETWPop，2是EarlyPop</li>
+<li>time_win:     AETW扩展了几个时间窗口</li>
+<li></li>
+<li>in/ot_fsum：   进/出的flow总计</li>
+<li>in/ot_psum：  进/出的package总计</li>
+<li>in/ot_bsum：  进/出的bytes总计</li>
+<li></li>
+<li>diff_flow_io：    进出flow差值</li>
+<li>diff_flow_oi：    出进flow差值</li>
+<li></li>
+<li>in/ot_locals_spike：  进/出短时间窗口（1小时）spike幅度</li>
+<li>in/ot_global_spike：  进/出长时间窗口（1天）spike幅度</li>
+<li>in/ot_spike：         in/ot_max(locals_spike/globals_spike)</li>
+<li>in/ot_spike_type:     flow spike/packages spike/bytes spike</li>
+<li></li>
+<li>in/ot_ipv4_count_avg:     进/出IP的平均出现次数</li>
+<li>in/ot_ipv4_count_top：    进/出IP中出现最多的次数</li>
+<li></li>
+<li>rate_io_avgs_pkgsize：    进/出包大小比率</li>
+<li>tops_nzport_io_equal：    进/出流量中最大的非0端口是否一致</li>
+<li></li>
+<li>diss_self_as_dst_port</li>
+<li>diss_self_as_src_port</li>
+<li>lens_self_as_dst_port</li>
+<li>avgs_in_duration</li>
+<li>avgs_in_pkgnums</li>
+<li>avgs_in_pkgsize</li>
+<li>avgs_ot_duration</li>
+<li>avgs_ot_pkgnums</li>
+<li>avgs_ot_pkgsize</li>
+<li>diss_in_ip_b</li>
+<li>diss_in_ip_c</li>
+<li>diss_in_ipv4</li>
+<li>diss_in_peer</li>
+<li>diss_in_pkgnums</li>
+<li>diss_in_pkgsize</li>
+<li>diss_in_port</li>
+<li>diss_in_tf</li>
+<li>diss_ot_ip_b</li>
+<li>diss_ot_ip_c</li>
+<li>diss_ot_ipv4</li>
+<li>diss_ot_peer</li>
+<li>diss_ot_pkgnums</li>
+<li>diss_ot_pkgsize</li>
+<li>diss_ot_port</li>
+<li>diss_ot_tf</li>
+<li>lens_in_duration</li>
+<li>lens_in_ipv4</li>
+<li>lens_in_pkgnums</li>
+<li>lens_in_port</li>
+<li>lens_ot_duration</li>
+<li>lens_ot_ipv4</li>
+<li>lens_ot_pkgnums</li>
+<li>lens_ot_port</li>
+<li>rate_in_ack</li>
+<li>rate_in_fin</li>
+<li>rate_in_nul</li>
+<li>rate_in_psh</li>
+<li>rate_in_rst</li>
+<li>rate_in_syn</li>
+<li>rate_in_urg</li>
+<li>rate_ot_ack</li>
+<li>rate_ot_fin</li>
+<li>rate_ot_nul</li>
+<li>rate_ot_psh</li>
+<li>rate_ot_rst</li>
+<li>rate_ot_syn</li>
+<li>rate_ot_urg</li>
+<li>sequ_ot_ip_b</li>
+<li>sequ_ot_ip_c</li>
+<li>sequ_ot_ipv4</li>
+<li>span_in_pkgsize</li>
+<li>span_ot_pkgsize</li>
+<li>top2_in_port</li>
+<li>top2_ot_port</li>
+<li>tops_self_as_src_port</li>
+<li>top2_self_as_src_port</li>
+<li>tops_in_duration</li>
+<li>tops_in_pkgnums</li>
+<li>tops_in_pkgsize</li>
+<li>tops_in_port</li>
+<li>tops_ot_duration</li>
+<li>tops_ot_pkgnums</li>
+<li>tops_ot_pkgsize</li>
+<li>tops_ot_port</li>
+<li>tops_self_as_dst_port</li>
+<li>tops_self_as_src_port</li>
+</ul>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/backbone-network/" rel="tag"># backbone network</a>
+          
+            <a href="/tags/ddos/" rel="tag"># ddos</a>
+          
+            <a href="/tags/scanner/" rel="tag"># scanner</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/26/pdns-white/" rel="next" title="PDNS 系统设计实现之二：PDNS白画像">
+                <i class="fa fa-chevron-left"></i> PDNS 系统设计实现之二：PDNS白画像
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/04/17/Automatic-discovery-of-malicious-websites-in-NOD/" rel="prev" title="Automatic discovery of malicious websites in NOD">
+                Automatic discovery of malicious websites in NOD <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- Go to www.addthis.com/dashboard to customize your tools -->
+<div class="addthis_inline_share_toolbox">
+  <script type = "text/javascript" src = "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-58c42267b9d94914" async = "async" ></script>
+</div>
+
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="hypercomments_widget"></div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/touxiang.jpg"
+               alt="YANG XU" />
+          <p class="site-author-name" itemprop="name">YANG XU</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">18</span>
+                <span class="site-state-item-name">posts</span>
+              </a>
+            </div>
+          
+
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">31</span>
+                <span class="site-state-item-name">tags</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://www.linkedin.com/in/xuamao/" target="_blank" title="Linkedin">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  Linkedin
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/xuy1202" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://twitter.com/xuy1202" target="_blank" title="Twitter">
+                  
+                    <i class="fa fa-fw fa-twitter"></i>
+                  
+                  Twitter
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/xuy1202" target="_blank" title="Weibo">
+                  
+                    <i class="fa fa-fw fa-weibo"></i>
+                  
+                  Weibo
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+          <div class="links-of-blogroll motion-element links-of-blogroll-inline">
+            <div class="links-of-blogroll-title">
+              <i class="fa  fa-fw fa-globe"></i>
+              Friends Links
+            </div>
+            <ul class="links-of-blogroll-list">
+              
+                <li class="links-of-blogroll-item">
+                  <a href="http://rootkiter.com/" title="0x00 RootKiter | Reverse Engineer/Botnet" target="_blank">0x00 RootKiter | Reverse Engineer/Botnet</a>
+                </li>
+              
+            </ul>
+          </div>
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#目的"><span class="nav-number">1.1.</span> <span class="nav-text">目的</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Pivot模型"><span class="nav-number">2.</span> <span class="nav-text">Pivot模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#双向"><span class="nav-number">2.1.</span> <span class="nav-text">双向</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多层"><span class="nav-number">2.2.</span> <span class="nav-text">多层</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多触发"><span class="nav-number">2.3.</span> <span class="nav-text">多触发</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#规则"><span class="nav-number">3.</span> <span class="nav-text">规则</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#特征概述"><span class="nav-number">3.1.</span> <span class="nav-text">特征概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则条件说明"><span class="nav-number">3.2.</span> <span class="nav-text">规则条件说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DirectionPosition"><span class="nav-number">3.2.1.</span> <span class="nav-text">DirectionPosition</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Item基本概念："><span class="nav-number">3.2.2.</span> <span class="nav-text">Item基本概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Calc基本概念："><span class="nav-number">3.2.3.</span> <span class="nav-text">Calc基本概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#举例："><span class="nav-number">3.2.4.</span> <span class="nav-text">举例：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则实例"><span class="nav-number">3.3.</span> <span class="nav-text">规则实例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则集"><span class="nav-number">3.4.</span> <span class="nav-text">规则集</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#架构"><span class="nav-number">4.</span> <span class="nav-text">架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原始数据分发"><span class="nav-number">4.1.</span> <span class="nav-text">原始数据分发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原始数据聚合"><span class="nav-number">4.2.</span> <span class="nav-text">原始数据聚合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模型数据匹配"><span class="nav-number">4.3.</span> <span class="nav-text">模型数据匹配</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结果数据输出"><span class="nav-number">4.4.</span> <span class="nav-text">结果数据输出</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#部署"><span class="nav-number">5.</span> <span class="nav-text">部署</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#单机"><span class="nav-number">5.1.</span> <span class="nav-text">单机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多机"><span class="nav-number">5.2.</span> <span class="nav-text">多机</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#持续运营"><span class="nav-number">6.</span> <span class="nav-text">持续运营</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#附录"><span class="nav-number">7.</span> <span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#规则可用属性"><span class="nav-number">7.1.</span> <span class="nav-text">规则可用属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#规则可用条件"><span class="nav-number">7.2.</span> <span class="nav-text">规则可用条件</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy;  2015 - God knows - 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">YANG XU</span>
+</div>
+
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="https://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+		<script type="text/javascript">
+		_hcwp = window._hcwp || [];
+
+		_hcwp.push({widget:"Bloggerstream", widget_id: 93402, selector:".hc-comment-count", label: "{\%COUNT%\}" });
+
+		
+		_hcwp.push({widget:"Stream", widget_id: 93402, xid: "2018/03/13/backbone-network-traffic-anomaly-detection/"});
+		
+
+		(function() {
+		if("HC_LOAD_INIT" in window)return;
+		HC_LOAD_INIT = true;
+		var lang = (navigator.language || navigator.systemLanguage || navigator.userLanguage || "en").substr(0, 2).toLowerCase();
+		var hcc = document.createElement("script"); hcc.type = "text/javascript"; hcc.async = true;
+		hcc.src = ("https:" == document.location.protocol ? "https" : "http")+"://w.hypercomments.com/widget/hc/93402/"+lang+"/widget.js";
+		var s = document.getElementsByTagName("script")[0];
+		s.parentNode.insertBefore(hcc, s.nextSibling);
+		})();
+		</script>
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length == 0) {
+      search_path = "search.xml";
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.popup').toggle();
+    }
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+      $.ajax({
+        url: path,
+        dataType: "xml",
+        async: true,
+        success: function( xmlResponse ) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = $( "entry", xmlResponse ).map(function() {
+            return {
+              title: $( "title", this ).text(),
+              content: $("content",this).text(),
+              url: $( "url" , this).text()
+            };
+          }).get();
+          var $input = document.getElementById(search_id);
+          var $resultContent = document.getElementById(content_id);
+          $input.addEventListener('input', function(){
+            var matchcounts = 0;
+            var str='<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length > 1) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var content_index = [];
+                var data_title = data.title.trim().toLowerCase();
+                var data_content = data.content.trim().replace(/<[^>]+>/g,"").toLowerCase();
+                var data_url = decodeURIComponent(data.url);
+                var index_title = -1;
+                var index_content = -1;
+                var first_occur = -1;
+                // only match artiles with not empty titles and contents
+                if(data_title != '') {
+                  keywords.forEach(function(keyword, i) {
+                    index_title = data_title.indexOf(keyword);
+                    index_content = data_content.indexOf(keyword);
+                    if( index_title >= 0 || index_content >= 0 ){
+                      isMatch = true;
+                      if (i == 0) {
+                        first_occur = index_content;
+                      }
+                    }
+
+                  });
+                }
+                // show search results
+                if (isMatch) {
+                  matchcounts += 1;
+                  str += "<li><a href='"+ data_url +"' class='search-result-title'>"+ data_title +"</a>";
+                  var content = data.content.trim().replace(/<[^>]+>/g,"");
+                  if (first_occur >= 0) {
+                    // cut out 100 characters
+                    var start = first_occur - 20;
+                    var end = first_occur + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if(start == 0){
+                      end = 50;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    var match_content = content.substring(start, end);
+                    // highlight all keywords
+                    keywords.forEach(function(keyword){
+                      var regS = new RegExp(keyword, "gi");
+                      match_content = match_content.replace(regS, "<b class=\"search-keyword\">"+keyword+"</b>");
+                    });
+
+                    str += "<p class=\"search-result\">" + match_content +"...</p>"
+                  }
+                  str += "</li>";
+                }
+              })};
+            str += "</ul>";
+            if (matchcounts == 0) { str = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>' }
+            if (keywords == "") { str = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>' }
+            $resultContent.innerHTML = str;
+          });
+          proceedsearch();
+        }
+      });}
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched == false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(function(e){
+      $('.popup').hide();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    });
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
