@@ -119,7 +119,7 @@
 查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。
 我的监控命令用到了一个lsof，手动执行ok，但是crontab里面执行的时候是找不到的，需要设置PATH或者使用绝对路径。
 搜索“cron 环境变量 坑爹">
-<meta property="og:updated_time" content="2017-03-27T02:30:51.000Z">
+<meta property="og:updated_time" content="2019-04-29T08:00:29.798Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="crontab notes">
 <meta name="twitter:description" content="为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。
@@ -381,17 +381,15 @@
 
           
             
-            <!--noindex-->
               <span class="post-comments-count">
                 <span class="post-meta-divider">|</span>
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
                 <a href="/2015/09/24/crontab-notes/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count hc-comment-count" data-xid="2015/09/24/crontab-notes/" itemprop="commentsCount"></span>
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2015/09/24/crontab-notes/" itemprop="commentCount"></span>
                 </a>
               </span>
-              <!--/noindex-->
             
           
 
@@ -506,7 +504,12 @@
           
   <div class="comments" id="comments">
     
-      <div id="hypercomments_widget"></div>
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
     
   </div>
 
@@ -765,32 +768,35 @@
 
   
 
+    <script type="text/javascript">
+      var disqus_shortname = 'cybatk-com';
+      var disqus_identifier = '2015/09/24/crontab-notes/';
+
+      var disqus_title = "crontab notes";
 
 
+      function run_disqus_script(disqus_script) {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      }
 
-	
+      run_disqus_script('count.js');
 
-		<script type="text/javascript">
-		_hcwp = window._hcwp || [];
+      
+        var disqus_config = function () {
+            this.page.url = disqus_url;
+            this.page.identifier = disqus_identifier;
+            this.page.title = disqus_title;
+        };
+        run_disqus_script('embed.js');
+      
 
-		_hcwp.push({widget:"Bloggerstream", widget_id: 93402, selector:".hc-comment-count", label: "{\%COUNT%\}" });
+    </script>
+  
 
-		
-		_hcwp.push({widget:"Stream", widget_id: 93402, xid: "2015/09/24/crontab-notes/"});
-		
-
-		(function() {
-		if("HC_LOAD_INIT" in window)return;
-		HC_LOAD_INIT = true;
-		var lang = (navigator.language || navigator.systemLanguage || navigator.userLanguage || "en").substr(0, 2).toLowerCase();
-		var hcc = document.createElement("script"); hcc.type = "text/javascript"; hcc.async = true;
-		hcc.src = ("https:" == document.location.protocol ? "https" : "http")+"://w.hypercomments.com/widget/hc/93402/"+lang+"/widget.js";
-		var s = document.getElementsByTagName("script")[0];
-		s.parentNode.insertBefore(hcc, s.nextSibling);
-		})();
-		</script>
-
-	
 
 
 

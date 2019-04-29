@@ -883,7 +883,7 @@
     <link href="http://cybatk.com/2015/09/24/crontab-notes/"/>
     <id>http://cybatk.com/2015/09/24/crontab-notes/</id>
     <published>2015-09-24T15:20:43.000Z</published>
-    <updated>2017-03-27T02:30:51.000Z</updated>
+    <updated>2019-04-29T08:00:29.798Z</updated>
     
     <content type="html"><![CDATA[<p>为了监控系统，在crontab里设置了几条命令，自己测试怎么都好使，但是放在crontab里就是不执行。</p>
 <p>查看/var/log/cron可以看到执行记录，但是结果不是期望的，都要怀疑操作系统了。请教了一个运维老司机，原来知道是环境变量的原因。</p>
